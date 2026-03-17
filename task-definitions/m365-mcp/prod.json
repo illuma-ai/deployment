@@ -20,12 +20,6 @@
           "protocol": "tcp"
         }
       ],
-      "secrets": [
-        {
-          "name": "APP_SECRET",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/m365-mcp-PLACEHOLDER:APP_SECRET::"
-        }
-      ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
