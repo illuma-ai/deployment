@@ -100,6 +100,25 @@ jobs:
             ./source
           ls -la ./source
 
+      - name: Clone dependencies
+        run: |
+          SERVICE="${{ needs.resolve.outputs.service }}"
+          # Chat depends on illuma-agents (file:../agents reference in package.json)
+          if [ "$SERVICE" = "chat" ]; then
+            echo "Cloning illuma-ai/agents for chat dependency..."
+            git clone --depth 1 \
+              "https://x-access-token:${{ secrets.PRIVATE_REPO_PAT }}@github.com/illuma-ai/agents.git" \
+              ./agents
+            # Update package.json to use local path within Docker context
+            cd ./source
+            sed -i 's|"file:../agents"|"file:./agents"|' package.json
+            sed -i 's|"file:../agents"|"file:agents"|' package-lock.json
+            # Copy agents into source so it's within Docker build context
+            cp -r ../agents ./agents
+            echo "Agents copied into source directory"
+            ls -la ./agents
+          fi
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
