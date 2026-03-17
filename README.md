@@ -57,10 +57,10 @@ Starts or stops **all services at once**. Use this for demos.
 
 | Schedule | Action | Days |
 |----------|--------|------|
-| **8 AM EST** | auto start-all (dev) | Monday – Friday |
-| **11 PM EST** | auto stop-all (dev) | Every night |
+| **8 AM EST** | auto start-all (dev) | Every day |
+| **11 PM EST** | auto stop-all (dev) | Every day |
 
-Services start automatically on weekday mornings and stop every night to save costs.
+Services start automatically every morning and stop every night to save costs.
 
 ---
 

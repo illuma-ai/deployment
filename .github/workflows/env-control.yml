@@ -20,7 +20,7 @@ on:
 
   schedule:
     - cron: '0 4 * * *'   # Auto-stop dev at 11 PM EST
-    - cron: '0 13 * * 1-5' # Auto-start dev at 8 AM EST (weekdays only)
+    - cron: '0 13 * * *'   # Auto-start dev at 8 AM EST daily
 
 permissions:
   id-token: write
@@ -45,7 +45,7 @@ jobs:
         run: |
           # For scheduled runs: 8 AM EST cron = start-all, 11 PM EST cron = stop-all
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            if [ "${{ github.event.schedule }}" = "0 13 * * 1-5" ]; then
+            if [ "${{ github.event.schedule }}" = "0 13 * * *" ]; then
               ACTION="start-all"
             else
               ACTION="stop-all"
@@ -82,7 +82,7 @@ jobs:
           done
 
       - name: Wait for services (start only)
-        if: inputs.action == 'start-all' || (github.event_name == 'schedule' && github.event.schedule == '0 13 * * 1-5')
+        if: inputs.action == 'start-all' || (github.event_name == 'schedule' && github.event.schedule == '0 13 * * *')
         run: |
           ENV="${{ inputs.environment || 'dev' }}"
           CLUSTER="illuma-ai-ecs-cluster-$ENV"
