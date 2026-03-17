@@ -53,9 +53,14 @@ Starts or stops **all services at once**. Use this for demos.
 | **action** | start-all, stop-all | Start or stop everything |
 | **environment** | dev, prod | Target environment |
 
-#### Nightly auto-stop
+#### Scheduled automation
 
-The dev environment **automatically stops every night at 8 PM EST** to save costs. Run `start-all` the next morning to bring services back up (~2 minutes).
+| Schedule | Action | Days |
+|----------|--------|------|
+| **8 AM EST** | auto start-all (dev) | Monday – Friday |
+| **11 PM EST** | auto stop-all (dev) | Every night |
+
+Services start automatically on weekday mornings and stop every night to save costs.
 
 ---
 
