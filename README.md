@@ -1,212 +1,108 @@
 # Illuma AI — Deployment Guide
 
-Central CI/CD pipeline for all Illuma AI platform services.
+## Workflows
 
-## Quick Reference
-
-| Service | Dev URL | Health Check |
-|---------|---------|-------------|
-| chat | https://dev-illuma.gaavi.ai | `GET /api/health` |
-| rag-api | (internal) :8000 | `GET /health` |
-| code-executor | (internal) :8088 | `GET /health` |
-| memory | (internal) :8001 | `GET /health` |
-| m365-mcp | (internal) :3003 | `GET /health` |
+This repo has two workflows. Both are triggered from the **Actions** tab.
 
 ---
 
-## How to Deploy
+### 1. Deploy Service
 
-### Option 1: Automatic (recommended)
+Deploys, stops, or starts a single service.
 
-Push code to `develop` or `main` branch. Deployment triggers automatically.
-
-```
-git push origin develop    →  deploys to DEV
-git push origin main       →  deploys to PROD
-```
-
-That's it. The pipeline will:
-1. Build the Docker image
-2. Push to container registry
-3. Update the running service
-4. Wait for health check to pass
-5. Show deployment summary
-
-### Option 2: Manual (via GitHub Actions UI)
-
-1. Go to [**Actions → Deploy Service**](https://github.com/illuma-ai/deployment/actions/workflows/deploy.yml)
+**How to run:**
+1. Go to **Actions → Deploy Service**
 2. Click **"Run workflow"**
-3. Select:
-   - **service** — which service to deploy (chat, rag-api, code-executor, memory, m365-mcp)
-   - **environment** — dev or prod
-   - **action** — deploy, stop, or start
-   - **ref** — branch or tag to deploy (default: main)
-4. Click **"Run workflow"**
+3. Fill in the inputs and click **"Run workflow"**
 
-#### Actions explained
+| Input | Options | Description |
+|-------|---------|-------------|
+| **service** | chat, rag-api, code-executor, memory, m365-mcp | Which service |
+| **environment** | dev, prod | Target environment |
+| **action** | deploy, stop, start | What to do |
+| **ref** | Any branch or tag | Code version to deploy (only used with `deploy` action) |
 
-| Action | What it does |
-|--------|-------------|
-| **deploy** | Builds new image, deploys to ECS, waits for healthy |
-| **stop** | Scales service to 0 tasks (saves cost) |
-| **start** | Scales service back to minimum tasks |
+#### What each action does
+
+- **deploy** — Builds a new Docker image from the selected branch, pushes it, and deploys it. Waits for health check to pass before marking complete.
+- **stop** — Scales the service to 0 running tasks. Use this to shut down a single service.
+- **start** — Scales the service back up to its default task count.
+
+#### Auto-deploy
+
+This workflow also runs automatically when code is pushed to `develop` or `main` on any service repo. No manual trigger needed.
+
+| Branch pushed | Deploys to |
+|---------------|-----------|
+| `develop` | dev |
+| `main` | prod |
 
 ---
 
-## How to Start/Stop All Services
+### 2. Environment Control
 
-Use this for **demo mode** — spin everything up before a demo, shut down after.
+Starts or stops **all services at once**. Use this for demos.
 
-1. Go to [**Actions → Environment Control**](https://github.com/illuma-ai/deployment/actions/workflows/env-control.yml)
+**How to run:**
+1. Go to **Actions → Environment Control**
 2. Click **"Run workflow"**
-3. Select:
-   - **action** — `start-all` or `stop-all`
-   - **environment** — dev or prod
-4. Click **"Run workflow"**
+3. Fill in the inputs and click **"Run workflow"**
 
-### Auto-stop
+| Input | Options | Description |
+|-------|---------|-------------|
+| **action** | start-all, stop-all | Start or stop everything |
+| **environment** | dev, prod | Target environment |
 
-Dev environment **automatically stops every night at 8 PM EST** (1 AM UTC) to save costs. Run `start-all` the next morning when needed.
+#### Nightly auto-stop
 
-### Cost impact
-
-| Mode | Monthly Cost |
-|------|-------------|
-| Always-on (all services running 24/7) | ~$800 |
-| Demo-only (start before demo, stop after) | ~$130 |
-
-> **Tip**: Databases and the load balancer stay running even when services are stopped. This means `start-all` brings services back in ~2 minutes with no data loss.
+The dev environment **automatically stops every night at 8 PM EST** to save costs. Run `start-all` the next morning to bring services back up (~2 minutes).
 
 ---
 
 ## Monitoring a Deployment
 
-Every deployment run shows real-time progress. Click on any run to see:
+Click on any workflow run to see real-time progress:
 
 ```
-Step 1: ✓ Resolve Inputs          — identifies service, environment, branch
-Step 2: ✓ Fetch source code       — pulls latest code
-Step 3: ✓ Configure cloud         — authenticates with cloud provider
-Step 4: ✓ Build & push image      — builds Docker image, pushes to registry
-Step 5: ✓ Update task definition  — updates service config with new image
-Step 6: ✓ Deploy                  — deploys and waits for health check
-Step 7: ✓ Deployment summary      — shows final status
+✓ Resolve Inputs          — identifies service, environment, branch
+✓ Fetch source code       — pulls latest code
+✓ Configure cloud         — authenticates
+✓ Build & push image      — builds Docker image, pushes to registry
+✓ Update task definition  — updates service config with new image
+✓ Deploy                  — deploys and waits for health check
+✓ Deployment summary      — final status
 ```
 
-If any step fails, click on it to see the full logs.
-
-### Deployment Summary
-
-After each successful deploy, a summary is posted showing:
-- Service name
-- Environment
-- Branch deployed
-- Image tag
-
----
-
-## Services
-
-| Service | What it does |
-|---------|-------------|
-| chat | Main chat application |
-| rag-api | RAG document processing & search |
-| code-executor | Secure code execution |
-| memory | Agent memory system |
-| m365-mcp | Microsoft 365 connector |
-
-### Branch → Environment mapping
-
-| Branch | Environment | Auto-deploy? |
-|--------|-------------|-------------|
-| `develop` | dev | Yes |
-| `main` | prod | Yes |
-| Any other | — | No (use manual deploy with `ref` input) |
+Click on any failed step to see full logs.
 
 ---
 
 ## Common Tasks
 
-### "I want to deploy my branch to dev for testing"
+**Deploy a feature branch for testing:**
+Deploy Service → service = yours, environment = dev, action = deploy, ref = your-branch-name
 
-1. Go to **Actions → Deploy Service → Run workflow**
-2. Set **service** = your service, **environment** = dev, **action** = deploy, **ref** = your-branch-name
-3. Run it
+**Start everything for a demo:**
+Environment Control → action = start-all, environment = dev
 
-### "Services are down / I need to start everything"
+**Shut down after demo:**
+Environment Control → action = stop-all, environment = dev
 
-1. Go to **Actions → Environment Control → Run workflow**
-2. Set **action** = start-all, **environment** = dev
-3. Run it — all services will be up in ~2 minutes
+**Restart one service:**
+Deploy Service → action = stop, then action = start
 
-### "Demo is over, shut everything down"
-
-1. Go to **Actions → Environment Control → Run workflow**
-2. Set **action** = stop-all, **environment** = dev
-3. Run it — (or just wait, dev auto-stops at 8 PM EST)
-
-### "I want to restart just one service"
-
-1. Go to **Actions → Deploy Service → Run workflow**
-2. Set **action** = stop, run it
-3. Then set **action** = start, run it
-
-### "Something is broken, I need to rollback"
-
-1. Go to **Actions → Deploy Service → Run workflow**
-2. Set **ref** to the previous known-good branch or tag
-3. Set **action** = deploy
-4. Run it — the previous version will be built and deployed
-
----
-
-## Architecture Overview
-
-```
-Developer pushes to develop/main
-        │
-        ▼
-Service repo triggers pipeline
-        │
-        ▼
-┌─────────────────────────────┐
-│ 1. Fetch source code        │
-│ 2. Build Docker image       │
-│ 3. Push to container registry│
-│ 4. Deploy to ECS            │
-│ 5. Wait for health check    │
-└─────────────────────────────┘
-        │
-        ▼
-CloudFront → Load Balancer → Running Tasks
-https://dev-illuma.gaavi.ai
-```
-
-### Resource Allocation
-
-| Service | CPU | Memory | Min Tasks |
-|---------|-----|--------|-----------|
-| chat | 8 vCPU | 16 GB | 2 |
-| rag-api | 8 vCPU | 16 GB | 2 |
-| code-executor | 2 vCPU | 4 GB | 2 |
-| memory | 1 vCPU | 2 GB | 2 |
-| m365-mcp | 1 vCPU | 2 GB | 1 |
+**Rollback to a previous version:**
+Deploy Service → action = deploy, ref = previous branch or tag
 
 ---
 
 ## Troubleshooting
 
-### Deploy failed at "Build & push image"
-- Check the Docker build logs — likely a dependency or Dockerfile issue
-- Try building locally first: `docker build .` in the service repo
+**Deploy failed at "Build & push image"**
+Check the Docker build logs — usually a dependency or Dockerfile issue.
 
-### Deploy failed at "Deploy"
-- The health check is failing — the container starts but crashes
-- Check service logs for missing environment variables or configuration
+**Deploy failed at "Deploy"**
+Container is crashing. Check service logs for missing environment variables.
 
-### Services show 0 running tasks
-- Services are probably stopped (either manually or by nightly auto-stop)
-- Run **Environment Control → start-all**
-
-### "Failed to contact the origin" on dev-illuma.gaavi.ai
-- Services are stopped — run **Environment Control → start-all**
+**"Failed to contact the origin" on dev-illuma.gaavi.ai**
+Services are stopped. Run Environment Control → start-all.
