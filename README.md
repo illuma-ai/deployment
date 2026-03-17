@@ -18,7 +18,7 @@ Central CI/CD pipeline for all Illuma AI platform services.
 
 ### Option 1: Automatic (recommended)
 
-Push code to `develop` or `main` branch on any service repo. Deployment triggers automatically.
+Push code to `develop` or `main` branch. Deployment triggers automatically.
 
 ```
 git push origin develop    →  deploys to DEV
@@ -27,8 +27,8 @@ git push origin main       →  deploys to PROD
 
 That's it. The pipeline will:
 1. Build the Docker image
-2. Push to Amazon ECR
-3. Update the ECS service
+2. Push to container registry
+3. Update the running service
 4. Wait for health check to pass
 5. Show deployment summary
 
@@ -47,8 +47,8 @@ That's it. The pipeline will:
 
 | Action | What it does |
 |--------|-------------|
-| **deploy** | Builds new image, pushes to ECR, updates ECS service, waits for healthy |
-| **stop** | Scales service to 0 tasks (saves cost, no downtime wait) |
+| **deploy** | Builds new image, deploys to ECS, waits for healthy |
+| **stop** | Scales service to 0 tasks (saves cost) |
 | **start** | Scales service back to minimum tasks |
 
 ---
@@ -70,12 +70,12 @@ Dev environment **automatically stops every night at 8 PM EST** (1 AM UTC) to sa
 
 ### Cost impact
 
-| Mode | Monthly ECS Cost |
-|------|-----------------|
+| Mode | Monthly Cost |
+|------|-------------|
 | Always-on (all services running 24/7) | ~$800 |
 | Demo-only (start before demo, stop after) | ~$130 |
 
-> **Tip**: Databases (MongoDB, Redis) and the load balancer stay running even when services are stopped. This means `start-all` brings services back in ~2 minutes — no data loss.
+> **Tip**: Databases and the load balancer stay running even when services are stopped. This means `start-all` brings services back in ~2 minutes with no data loss.
 
 ---
 
@@ -85,13 +85,12 @@ Every deployment run shows real-time progress. Click on any run to see:
 
 ```
 Step 1: ✓ Resolve Inputs          — identifies service, environment, branch
-Step 2: ✓ Clone service repo      — pulls latest code from private repo
-Step 3: ✓ Configure AWS           — authenticates with AWS
-Step 4: ✓ Login to ECR            — authenticates with container registry
-Step 5: ✓ Build & push image      — builds Docker image, pushes to ECR
-Step 6: ✓ Render task definition  — updates ECS task with new image
-Step 7: ✓ Deploy to ECS           — deploys to ECS, waits for healthy
-Step 8: ✓ Deployment summary      — shows final status
+Step 2: ✓ Fetch source code       — pulls latest code
+Step 3: ✓ Configure cloud         — authenticates with cloud provider
+Step 4: ✓ Build & push image      — builds Docker image, pushes to registry
+Step 5: ✓ Update task definition  — updates service config with new image
+Step 6: ✓ Deploy                  — deploys and waits for health check
+Step 7: ✓ Deployment summary      — shows final status
 ```
 
 If any step fails, click on it to see the full logs.
@@ -102,19 +101,19 @@ After each successful deploy, a summary is posted showing:
 - Service name
 - Environment
 - Branch deployed
-- Docker image tag
+- Image tag
 
 ---
 
-## Service Repos
+## Services
 
-| Service | Repo | What it does |
-|---------|------|-------------|
-| chat | [illuma-ai/chat](https://github.com/illuma-ai/chat) | Main chat application |
-| rag-api | [illuma-ai/rag-api](https://github.com/illuma-ai/rag-api) | RAG document processing & search |
-| code-executor | [illuma-ai/code-executor](https://github.com/illuma-ai/code-executor) | Secure code execution |
-| memory | [illuma-ai/memory](https://github.com/illuma-ai/memory) | Agent memory system |
-| m365-mcp | [illuma-ai/m365-mcp](https://github.com/illuma-ai/m365-mcp) | Microsoft 365 connector |
+| Service | What it does |
+|---------|-------------|
+| chat | Main chat application |
+| rag-api | RAG document processing & search |
+| code-executor | Secure code execution |
+| memory | Agent memory system |
+| m365-mcp | Microsoft 365 connector |
 
 ### Branch → Environment mapping
 
@@ -167,22 +166,19 @@ After each successful deploy, a summary is posted showing:
 Developer pushes to develop/main
         │
         ▼
-Private repo (illuma-ai/chat, etc.)
-        │ notify-deploy.yml triggers
-        ▼
-illuma-ai/deployment (this repo)
-        │ deploy.yml runs
+Service repo triggers pipeline
+        │
         ▼
 ┌─────────────────────────────┐
-│ 1. Clone private repo       │
+│ 1. Fetch source code        │
 │ 2. Build Docker image       │
-│ 3. Push to Amazon ECR       │
-│ 4. Deploy to Amazon ECS     │
+│ 3. Push to container registry│
+│ 4. Deploy to ECS            │
 │ 5. Wait for health check    │
 └─────────────────────────────┘
         │
         ▼
-CloudFront → ALB → ECS Tasks
+CloudFront → Load Balancer → Running Tasks
 https://dev-illuma.gaavi.ai
 ```
 
@@ -198,36 +194,19 @@ https://dev-illuma.gaavi.ai
 
 ---
 
-## Secrets & Permissions
-
-Only users with **write access** to this repo can trigger workflows.
-
-### Required secrets (already configured)
-
-| Secret | Where | Purpose |
-|--------|-------|---------|
-| `PRIVATE_REPO_PAT` | This repo | Clone private service repos at build time |
-| `AWS_ACCESS_KEY_ID_DEV` | This repo | AWS credentials for dev deploys |
-| `AWS_SECRET_ACCESS_KEY_DEV` | This repo | AWS credentials for dev deploys |
-| `DEPLOYMENT_PAT` | Each private repo | Trigger auto-deploy on push |
-
----
-
 ## Troubleshooting
 
 ### Deploy failed at "Build & push image"
 - Check the Docker build logs — likely a dependency or Dockerfile issue
 - Try building locally first: `docker build .` in the service repo
 
-### Deploy failed at "Deploy to ECS"
+### Deploy failed at "Deploy"
 - The health check is failing — the container starts but crashes
-- Check CloudWatch logs: `/ecs/illuma-ai-{service}-dev`
-- Common cause: missing environment variables or secrets
+- Check service logs for missing environment variables or configuration
 
 ### Services show 0 running tasks
 - Services are probably stopped (either manually or by nightly auto-stop)
 - Run **Environment Control → start-all**
 
 ### "Failed to contact the origin" on dev-illuma.gaavi.ai
-- Services are stopped — run start-all
-- Or CloudFront/ALB issue — check if ALB returns 200 directly: `curl http://illuma-ai-alb-dev-1731619641.us-east-1.elb.amazonaws.com/api/health`
+- Services are stopped — run **Environment Control → start-all**
