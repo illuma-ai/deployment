@@ -190,7 +190,7 @@ https://dev-illuma.gaavi.ai
 | rag-api | 8 vCPU | 16 GB | 2 |
 | code-executor | 2 vCPU | 4 GB | 2 |
 | memory | 1 vCPU | 2 GB | 2 |
-| m365-mcp | 0.25 vCPU | 512 MB | 1 |
+| m365-mcp | 1 vCPU | 2 GB | 1 |
 
 ---
 
