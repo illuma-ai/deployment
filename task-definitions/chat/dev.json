@@ -1,0 +1,49 @@
+{
+  "family": "illuma-ai-chat-td-dev",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "8192",
+  "memory": "16384",
+  "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-dev",
+  "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-dev",
+  "containerDefinitions": [
+    {
+      "name": "illuma-ai-chat",
+      "image": "423159469683.dkr.ecr.us-east-1.amazonaws.com/illuma-ai-chat-dev:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3080,
+          "hostPort": 3080,
+          "protocol": "tcp"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "APP_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-PLACEHOLDER:APP_SECRET::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/illuma-ai-chat-dev",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:3080/api/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 120
+      }
+    }
+  ]
+}

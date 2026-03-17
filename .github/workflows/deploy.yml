@@ -1,0 +1,216 @@
+name: Deploy Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to deploy'
+        required: true
+        type: choice
+        options:
+          - chat
+          - rag-api
+          - code-executor
+          - memory
+          - m365-mcp
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - deploy
+          - stop
+          - start
+      ref:
+        description: 'Git branch/tag to deploy (only for deploy action)'
+        required: false
+        default: 'main'
+
+  repository_dispatch:
+    types:
+      - deploy-chat
+      - deploy-rag-api
+      - deploy-code-executor
+      - deploy-memory
+      - deploy-m365-mcp
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  resolve:
+    name: Resolve Inputs
+    runs-on: ubuntu-latest
+    outputs:
+      service: ${{ steps.resolve.outputs.service }}
+      environment: ${{ steps.resolve.outputs.environment }}
+      action: ${{ steps.resolve.outputs.action }}
+      ref: ${{ steps.resolve.outputs.ref }}
+      sha: ${{ steps.resolve.outputs.sha }}
+    steps:
+      - name: Resolve inputs
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            EVENT_TYPE="${{ github.event.action }}"
+            SERVICE="${EVENT_TYPE#deploy-}"
+            BRANCH="${{ github.event.client_payload.branch }}"
+            SHA="${{ github.event.client_payload.sha }}"
+            if [ "$BRANCH" = "main" ]; then ENV="prod"; else ENV="dev"; fi
+            echo "service=$SERVICE" >> $GITHUB_OUTPUT
+            echo "environment=$ENV" >> $GITHUB_OUTPUT
+            echo "action=deploy" >> $GITHUB_OUTPUT
+            echo "ref=$BRANCH" >> $GITHUB_OUTPUT
+            echo "sha=$SHA" >> $GITHUB_OUTPUT
+          else
+            echo "service=${{ inputs.service }}" >> $GITHUB_OUTPUT
+            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "action=${{ inputs.action }}" >> $GITHUB_OUTPUT
+            echo "ref=${{ inputs.ref || 'main' }}" >> $GITHUB_OUTPUT
+            echo "sha=" >> $GITHUB_OUTPUT
+          fi
+
+  deploy:
+    name: "Deploy: ${{ needs.resolve.outputs.service }} -> ${{ needs.resolve.outputs.environment }}"
+    needs: resolve
+    if: needs.resolve.outputs.action == 'deploy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout deployment repo
+        uses: actions/checkout@v4
+
+      - name: Clone service repo
+        run: |
+          SERVICE="${{ needs.resolve.outputs.service }}"
+          REF="${{ needs.resolve.outputs.ref }}"
+          echo "Cloning illuma-ai/$SERVICE (branch: $REF)..."
+          git clone --depth 1 --branch "$REF" \
+            "https://x-access-token:${{ secrets.PRIVATE_REPO_PAT }}@github.com/illuma-ai/$SERVICE.git" \
+            ./source
+          ls -la ./source
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_ACCESS_KEY_ID_PROD || secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_SECRET_ACCESS_KEY_PROD || secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image
+        id: build-image
+        working-directory: ./source
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SERVICE: ${{ needs.resolve.outputs.service }}
+          ENV: ${{ needs.resolve.outputs.environment }}
+        run: |
+          IMAGE_REPO="$ECR_REGISTRY/illuma-ai-$SERVICE-$ENV"
+          SHA="${{ needs.resolve.outputs.sha || github.sha }}"
+          SHORT_SHA="${SHA:0:8}"
+          docker build \
+            -t "$IMAGE_REPO:$SHA" \
+            -t "$IMAGE_REPO:$SHORT_SHA" \
+            -t "$IMAGE_REPO:$ENV" \
+            -t "$IMAGE_REPO:latest" \
+            .
+          docker push "$IMAGE_REPO" --all-tags
+          echo "image=$IMAGE_REPO:$SHA" >> $GITHUB_OUTPUT
+
+      - name: Render ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definitions/${{ needs.resolve.outputs.service }}/${{ needs.resolve.outputs.environment }}.json
+          container-name: illuma-ai-${{ needs.resolve.outputs.service }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: illuma-ai-${{ needs.resolve.outputs.service }}-svc-${{ needs.resolve.outputs.environment }}
+          cluster: illuma-ai-ecs-cluster-${{ needs.resolve.outputs.environment }}
+          wait-for-service-stability: true
+          wait-for-minutes: 10
+
+      - name: Deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Service** | ${{ needs.resolve.outputs.service }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Environment** | ${{ needs.resolve.outputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | ${{ needs.resolve.outputs.ref }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image** | ${{ steps.build-image.outputs.image }} |" >> $GITHUB_STEP_SUMMARY
+
+  stop:
+    name: "Stop: ${{ needs.resolve.outputs.service }} in ${{ needs.resolve.outputs.environment }}"
+    needs: resolve
+    if: needs.resolve.outputs.action == 'stop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_ACCESS_KEY_ID_PROD || secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_SECRET_ACCESS_KEY_PROD || secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Scale to zero
+        run: |
+          SERVICE="illuma-ai-${{ needs.resolve.outputs.service }}-svc-${{ needs.resolve.outputs.environment }}"
+          CLUSTER="illuma-ai-ecs-cluster-${{ needs.resolve.outputs.environment }}"
+          echo "Scaling $SERVICE to 0 in $CLUSTER..."
+          aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" --desired-count 0 --no-cli-pager
+          echo "## Service Stopped" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service:** $SERVICE" >> $GITHUB_STEP_SUMMARY
+
+  start:
+    name: "Start: ${{ needs.resolve.outputs.service }} in ${{ needs.resolve.outputs.environment }}"
+    needs: resolve
+    if: needs.resolve.outputs.action == 'start'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_ACCESS_KEY_ID_PROD || secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_SECRET_ACCESS_KEY_PROD || secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Determine min tasks
+        id: min-tasks
+        run: |
+          SERVICE="${{ needs.resolve.outputs.service }}"
+          case "$SERVICE" in
+            chat|rag-api|code-executor|memory) TASKS=2 ;;
+            m365-mcp) TASKS=1 ;;
+            *) TASKS=1 ;;
+          esac
+          echo "count=$TASKS" >> $GITHUB_OUTPUT
+
+      - name: Scale up
+        run: |
+          SERVICE="illuma-ai-${{ needs.resolve.outputs.service }}-svc-${{ needs.resolve.outputs.environment }}"
+          CLUSTER="illuma-ai-ecs-cluster-${{ needs.resolve.outputs.environment }}"
+          TASKS=${{ steps.min-tasks.outputs.count }}
+          echo "Scaling $SERVICE to $TASKS..."
+          aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" --desired-count "$TASKS" --no-cli-pager
+          echo "## Service Started" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service:** $SERVICE" >> $GITHUB_STEP_SUMMARY
+          echo "- **Desired Count:** $TASKS" >> $GITHUB_STEP_SUMMARY

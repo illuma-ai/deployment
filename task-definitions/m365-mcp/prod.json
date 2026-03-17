@@ -1,0 +1,49 @@
+{
+  "family": "illuma-ai-m365-mcp-td-prod",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-prod",
+  "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-prod",
+  "containerDefinitions": [
+    {
+      "name": "illuma-ai-m365-mcp",
+      "image": "423159469683.dkr.ecr.us-east-1.amazonaws.com/illuma-ai-m365-mcp-prod:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3003,
+          "hostPort": 3003,
+          "protocol": "tcp"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "APP_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/m365-mcp-PLACEHOLDER:APP_SECRET::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/illuma-ai-m365-mcp-prod",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:3003/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}
