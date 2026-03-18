@@ -1,0 +1,64 @@
+{
+  "family": "illuma-ai-mongodb-td-dev",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "256",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-dev",
+  "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-dev",
+  "containerDefinitions": [
+    {
+      "name": "illuma-ai-mongodb",
+      "image": "mongo:7.0",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 27017,
+          "hostPort": 27017,
+          "protocol": "tcp"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "mongodb-data",
+          "containerPath": "/data/db",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/illuma-ai-mongodb-dev",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "mongosh --eval 'db.runCommand({ping:1}).ok' --quiet || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "mongodb-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-0aca35a460fb8b23e",
+        "rootDirectory": "/",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "fsap-09622f9973be042c0",
+          "iam": "DISABLED"
+        }
+      }
+    }
+  ]
+}

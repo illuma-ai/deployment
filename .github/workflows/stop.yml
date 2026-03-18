@@ -13,6 +13,7 @@ on:
           - code-executor
           - memory
           - m365-mcp
+          - mongodb
       environment:
         description: 'Target environment'
         required: true

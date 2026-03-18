@@ -37,7 +37,7 @@ jobs:
         run: |
           ENV="${{ inputs.environment || 'dev' }}"
           CLUSTER="illuma-ai-ecs-cluster-$ENV"
-          SERVICES="chat rag-api code-executor memory m365-mcp"
+          SERVICES="chat rag-api code-executor memory m365-mcp mongodb"
 
           echo "## Stop All Services ($ENV)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

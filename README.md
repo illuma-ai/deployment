@@ -12,7 +12,7 @@ Builds and deploys a single service.
 
 | Input | Options | Description |
 |-------|---------|-------------|
-| **service** | chat, rag-api, code-executor, memory, m365-mcp | Which service |
+| **service** | chat, rag-api, code-executor, memory, m365-mcp, mongodb | Which service |
 | **environment** | dev, prod | Target environment |
 | **ref** | Any branch or tag | Code version to deploy |
 | **cpu_memory** | default, 1 vCPU / 2 GB, 2 vCPU / 4 GB, 2 vCPU / 8 GB, 4 vCPU / 8 GB, 8 vCPU / 16 GB | Resource allocation |
@@ -29,7 +29,7 @@ Stops a single service (scales to 0).
 
 | Input | Options | Description |
 |-------|---------|-------------|
-| **service** | chat, rag-api, code-executor, memory, m365-mcp | Which service |
+| **service** | chat, rag-api, code-executor, memory, m365-mcp, mongodb | Which service |
 | **environment** | dev, prod | Target environment |
 
 ---
