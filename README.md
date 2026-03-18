@@ -2,69 +2,61 @@
 
 ## Workflows
 
-This repo has two workflows. Both are triggered from the **Actions** tab.
+This repo has four workflows. All are triggered from the **Actions** tab.
 
 ---
 
 ### 1. Deploy Service
 
-Starts or stops a single service.
-
-**How to run:**
-1. Go to **Actions → Deploy Service**
-2. Click **"Run workflow"**
-3. Fill in the inputs and click **"Run workflow"**
+Builds and deploys a single service.
 
 | Input | Options | Description |
 |-------|---------|-------------|
 | **service** | chat, rag-api, code-executor, memory, m365-mcp | Which service |
 | **environment** | dev, prod | Target environment |
-| **action** | start, stop | What to do |
-| **ref** | Any branch or tag | Code version to deploy (ignored for stop) |
-| **cpu_memory** | default, 1 vCPU / 2 GB, 2 vCPU / 4 GB, 2 vCPU / 8 GB, 4 vCPU / 8 GB, 8 vCPU / 16 GB | Resource allocation (ignored for stop) |
-| **min_tasks** | 1, 2, 3 | Minimum running tasks / auto-scaling floor (ignored for stop) |
-| **max_tasks** | 1, 2, 3 | Maximum running tasks / auto-scaling ceiling (ignored for stop) |
+| **ref** | Any branch or tag | Code version to deploy |
+| **cpu_memory** | default, 1 vCPU / 2 GB, 2 vCPU / 4 GB, 2 vCPU / 8 GB, 4 vCPU / 8 GB, 8 vCPU / 16 GB | Resource allocation |
+| **min_tasks** | 1, 2, 3 | Auto-scaling minimum |
+| **max_tasks** | 1, 2, 3 | Auto-scaling maximum |
 
-#### What each action does
-
-- **start** — Builds a new Docker image from the selected branch, pushes it, deploys it, and configures auto-scaling. Waits for health check to pass before marking complete.
-- **stop** — Scales the service to 0 running tasks. All other inputs are ignored.
-
-#### Auto-deploy
-
-This workflow also runs automatically when code is pushed to `develop` or `main` on any service repo. No manual trigger needed.
-
-| Branch pushed | Deploys to |
-|---------------|-----------|
-| `develop` | dev |
-| `main` | prod |
+Also runs automatically when code is pushed to `develop` (→ dev) or `main` (→ prod).
 
 ---
 
-### 2. Environment Control
+### 2. Stop Service
 
-Starts or stops **all services at once**. Use this for demos.
-
-**How to run:**
-1. Go to **Actions → Environment Control**
-2. Click **"Run workflow"**
-3. Fill in the inputs and click **"Run workflow"**
+Stops a single service (scales to 0).
 
 | Input | Options | Description |
 |-------|---------|-------------|
-| **action** | start-all, stop-all | Start or stop everything |
+| **service** | chat, rag-api, code-executor, memory, m365-mcp | Which service |
 | **environment** | dev, prod | Target environment |
-| **cpu_memory** | default, 1 vCPU / 2 GB, 2 vCPU / 4 GB, 2 vCPU / 8 GB, 4 vCPU / 8 GB, 8 vCPU / 16 GB | Resource override for all services (ignored for stop-all) |
-| **min_tasks** | 1, 2, 3 | Tasks per service (ignored for stop-all) |
 
-#### Scheduled automation
+---
 
-| Schedule | Action | Days |
-|----------|--------|------|
-| **8 AM EST** | auto start-all (dev) | Every day |
-| **11 PM EST** | auto stop-all (dev) | Every day |
+### 3. Start All Services
 
-Services start automatically every morning and stop every night to save costs.
+Starts all services at once. Use this for demos.
+
+| Input | Options | Description |
+|-------|---------|-------------|
+| **environment** | dev, prod | Target environment |
+| **cpu_memory** | default, 1 vCPU / 2 GB, 2 vCPU / 4 GB, 2 vCPU / 8 GB, 4 vCPU / 8 GB, 8 vCPU / 16 GB | Resource override for all services |
+| **min_tasks** | 1, 2, 3 | Tasks per service |
+
+Runs automatically at **8 AM EST** every day (dev).
+
+---
+
+### 4. Stop All Services
+
+Stops all services at once (scales everything to 0).
+
+| Input | Options | Description |
+|-------|---------|-------------|
+| **environment** | dev, prod | Target environment |
+
+Runs automatically at **11 PM EST** every day (dev).
 
 ---
 
@@ -90,19 +82,19 @@ Click on any failed step to see full logs.
 ## Common Tasks
 
 **Deploy a feature branch for testing:**
-Deploy Service → service = yours, environment = dev, action = start, ref = your-branch-name
+Deploy Service → service = yours, environment = dev, ref = your-branch-name
 
 **Start everything for a demo:**
-Environment Control → action = start-all, environment = dev
+Start All Services → environment = dev
 
 **Shut down after demo:**
-Environment Control → action = stop-all, environment = dev
+Stop All Services → environment = dev
 
 **Scale up for load testing:**
-Deploy Service → action = start, cpu_memory = 4 vCPU / 8 GB, min_tasks = 2, max_tasks = 3
+Deploy Service → cpu_memory = 4 vCPU / 8 GB, min_tasks = 2, max_tasks = 3
 
 **Rollback to a previous version:**
-Deploy Service → action = start, ref = previous branch or tag
+Deploy Service → ref = previous branch or tag
 
 ---
 
@@ -114,5 +106,5 @@ Check the Docker build logs — usually a dependency or Dockerfile issue.
 **Deploy failed at "Deploy"**
 Container is crashing. Check service logs for missing environment variables.
 
-**"Failed to contact the origin" on dev-illuma.gaavi.ai**
-Services are stopped. Run Environment Control → start-all.
+**"Failed to contact the origin"**
+Services are stopped. Run Start All Services.

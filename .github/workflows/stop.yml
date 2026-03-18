@@ -1,0 +1,51 @@
+name: Stop Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to stop'
+        required: true
+        type: choice
+        options:
+          - chat
+          - rag-api
+          - code-executor
+          - memory
+          - m365-mcp
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  stop:
+    name: "Stop: ${{ inputs.service }} in ${{ inputs.environment }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ inputs.environment == 'prod' && secrets.AWS_ACCESS_KEY_ID_PROD || secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ inputs.environment == 'prod' && secrets.AWS_SECRET_ACCESS_KEY_PROD || secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Scale to zero
+        run: |
+          SERVICE="illuma-ai-${{ inputs.service }}-svc-${{ inputs.environment }}"
+          CLUSTER="illuma-ai-ecs-cluster-${{ inputs.environment }}"
+          echo "Scaling $SERVICE to 0 in $CLUSTER..."
+          aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" --desired-count 0 --no-cli-pager
+          echo "## Service Stopped" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service:** $SERVICE" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY

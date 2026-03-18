@@ -20,19 +20,12 @@ on:
         options:
           - dev
           - prod
-      action:
-        description: 'Action to perform'
-        required: true
-        type: choice
-        options:
-          - start
-          - stop
       ref:
-        description: 'Git branch/tag to deploy (ignored for stop)'
+        description: 'Git branch/tag to deploy'
         required: false
         default: 'main'
       cpu_memory:
-        description: 'CPU / Memory (ignored for stop)'
+        description: 'CPU / Memory'
         required: false
         type: choice
         default: 'default'
@@ -44,7 +37,7 @@ on:
           - '4 vCPU / 8 GB'
           - '8 vCPU / 16 GB'
       min_tasks:
-        description: 'Min tasks (ignored for stop)'
+        description: 'Min tasks (auto-scaling minimum)'
         required: false
         type: choice
         default: '1'
@@ -53,7 +46,7 @@ on:
           - '2'
           - '3'
       max_tasks:
-        description: 'Max tasks (ignored for stop)'
+        description: 'Max tasks (auto-scaling maximum)'
         required: false
         type: choice
         default: '2'
@@ -84,7 +77,6 @@ jobs:
     outputs:
       service: ${{ steps.resolve.outputs.service }}
       environment: ${{ steps.resolve.outputs.environment }}
-      action: ${{ steps.resolve.outputs.action }}
       ref: ${{ steps.resolve.outputs.ref }}
       sha: ${{ steps.resolve.outputs.sha }}
       cpu_memory: ${{ steps.resolve.outputs.cpu_memory }}
@@ -102,7 +94,6 @@ jobs:
             if [ "$BRANCH" = "main" ]; then ENV="prod"; else ENV="dev"; fi
             echo "service=$SERVICE" >> $GITHUB_OUTPUT
             echo "environment=$ENV" >> $GITHUB_OUTPUT
-            echo "action=start" >> $GITHUB_OUTPUT
             echo "ref=$BRANCH" >> $GITHUB_OUTPUT
             echo "sha=$SHA" >> $GITHUB_OUTPUT
             echo "cpu_memory=default" >> $GITHUB_OUTPUT
@@ -111,7 +102,6 @@ jobs:
           else
             echo "service=${{ inputs.service }}" >> $GITHUB_OUTPUT
             echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
-            echo "action=${{ inputs.action }}" >> $GITHUB_OUTPUT
             echo "ref=${{ inputs.ref || 'main' }}" >> $GITHUB_OUTPUT
             echo "sha=" >> $GITHUB_OUTPUT
             echo "cpu_memory=${{ inputs.cpu_memory || 'default' }}" >> $GITHUB_OUTPUT
@@ -119,10 +109,9 @@ jobs:
             echo "max_tasks=${{ inputs.max_tasks || '2' }}" >> $GITHUB_OUTPUT
           fi
 
-  start:
-    name: "Start: ${{ needs.resolve.outputs.service }} -> ${{ needs.resolve.outputs.environment }}"
+  deploy:
+    name: "Deploy: ${{ needs.resolve.outputs.service }} -> ${{ needs.resolve.outputs.environment }}"
     needs: resolve
-    if: needs.resolve.outputs.action == 'start'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout deployment repo
@@ -243,25 +232,3 @@ jobs:
           echo "| **Image** | ${{ steps.build-image.outputs.image }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **CPU/Memory** | $CPU_MEM |" >> $GITHUB_STEP_SUMMARY
           echo "| **Auto-scale** | min=${{ needs.resolve.outputs.min_tasks }}, max=${{ needs.resolve.outputs.max_tasks }} |" >> $GITHUB_STEP_SUMMARY
-
-  stop:
-    name: "Stop: ${{ needs.resolve.outputs.service }} in ${{ needs.resolve.outputs.environment }}"
-    needs: resolve
-    if: needs.resolve.outputs.action == 'stop'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_ACCESS_KEY_ID_PROD || secrets.AWS_ACCESS_KEY_ID_DEV }}
-          aws-secret-access-key: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_SECRET_ACCESS_KEY_PROD || secrets.AWS_SECRET_ACCESS_KEY_DEV }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Scale to zero
-        run: |
-          SERVICE="illuma-ai-${{ needs.resolve.outputs.service }}-svc-${{ needs.resolve.outputs.environment }}"
-          CLUSTER="illuma-ai-ecs-cluster-${{ needs.resolve.outputs.environment }}"
-          echo "Scaling $SERVICE to 0 in $CLUSTER..."
-          aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" --desired-count 0 --no-cli-pager
-          echo "## Service Stopped" >> $GITHUB_STEP_SUMMARY
-          echo "- **Service:** $SERVICE" >> $GITHUB_STEP_SUMMARY

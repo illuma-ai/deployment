@@ -1,0 +1,55 @@
+name: Stop All Services
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+
+  schedule:
+    - cron: '0 4 * * *'   # Auto-stop dev at 11 PM EST daily
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  stop:
+    name: "Stop all - ${{ inputs.environment || 'dev' }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ (inputs.environment || 'dev') == 'prod' && secrets.AWS_ACCESS_KEY_ID_PROD || secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ (inputs.environment || 'dev') == 'prod' && secrets.AWS_SECRET_ACCESS_KEY_PROD || secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Stop all services
+        run: |
+          ENV="${{ inputs.environment || 'dev' }}"
+          CLUSTER="illuma-ai-ecs-cluster-$ENV"
+          SERVICES="chat rag-api code-executor memory m365-mcp"
+
+          echo "## Stop All Services ($ENV)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          for SVC in $SERVICES; do
+            ECS_SVC="illuma-ai-${SVC}-svc-${ENV}"
+            echo "Scaling $ECS_SVC to 0..."
+            if aws ecs update-service --cluster "$CLUSTER" --service "$ECS_SVC" --desired-count 0 --no-cli-pager > /dev/null 2>&1; then
+              echo "| $SVC | Stopped |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $SVC | FAILED |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
