@@ -1,0 +1,146 @@
+name: Publish Browser Plugin
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git branch/tag to publish'
+        required: false
+        default: 'main'
+      publish:
+        description: 'Publish to Chrome Web Store (or just build)'
+        required: true
+        type: choice
+        default: 'build-only'
+        options:
+          - build-only
+          - publish
+
+  repository_dispatch:
+    types:
+      - deploy-browser-plugin
+
+permissions:
+  contents: read
+
+env:
+  REPO: illuma-ai/browser-plugin
+  NODE_VERSION: '22'
+  PNPM_VERSION: '9.15.1'
+
+jobs:
+  resolve:
+    name: Resolve Inputs
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      publish: ${{ steps.resolve.outputs.publish }}
+    steps:
+      - name: Resolve inputs
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            BRANCH="${{ github.event.client_payload.branch }}"
+            SHA="${{ github.event.client_payload.sha }}"
+            echo "ref=$BRANCH" >> $GITHUB_OUTPUT
+            echo "sha=$SHA" >> $GITHUB_OUTPUT
+            # Auto-publish only on main branch push
+            if [ "$BRANCH" = "main" ]; then
+              echo "publish=publish" >> $GITHUB_OUTPUT
+            else
+              echo "publish=build-only" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "ref=${{ inputs.ref || 'main' }}" >> $GITHUB_OUTPUT
+            echo "sha=" >> $GITHUB_OUTPUT
+            echo "publish=${{ inputs.publish || 'build-only' }}" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Build & Package
+    needs: resolve
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      zip_name: ${{ steps.version.outputs.zip_name }}
+    steps:
+      - name: Checkout browser-plugin
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.REPO }}
+          ref: ${{ needs.resolve.outputs.sha || needs.resolve.outputs.ref }}
+          token: ${{ secrets.CODE_REPO_PAT }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build production
+        run: pnpm build:prod
+
+      - name: Verify dist is clean
+        run: |
+          VIOLATIONS=$(find dist/ -name "_*" -o -name ".*" 2>/dev/null | grep -v "^$" || true)
+          if [ -n "$VIOLATIONS" ]; then
+            echo "::error::dist/ contains reserved filenames"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+
+      - name: Package extension
+        run: node scripts/zip.mjs
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(node -e "console.log(require('./package.json').version)")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "zip_name=illuma-browser-${VERSION}.zip" >> $GITHUB_OUTPUT
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-plugin-${{ steps.version.outputs.version }}
+          path: illuma-browser-*.zip
+          retention-days: 90
+
+  publish:
+    name: Publish to Chrome Web Store
+    needs: [resolve, build]
+    if: needs.resolve.outputs.publish == 'publish'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: browser-plugin-${{ needs.build.outputs.version }}
+
+      - name: Upload to Chrome Web Store
+        uses: mnao305/chrome-extension-upload@v5.0.0
+        with:
+          file-path: ${{ needs.build.outputs.zip_name }}
+          extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          publish: true
+
+      - name: Summary
+        run: |
+          echo "## Browser Plugin Published" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ needs.build.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ needs.resolve.outputs.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA:** ${{ needs.resolve.outputs.sha || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** Published to Chrome Web Store" >> $GITHUB_STEP_SUMMARY
