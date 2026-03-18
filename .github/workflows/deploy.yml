@@ -24,11 +24,11 @@ on:
           - dev
           - prod
       ref:
-        description: 'Git branch/tag to deploy (ECS services only)'
+        description: 'Git branch/tag (ignored for mongodb, redis, postgres)'
         required: false
         default: 'main'
       cpu_memory:
-        description: 'CPU / Memory (ECS services only)'
+        description: 'CPU / Memory (ignored for mongodb, redis, postgres)'
         required: false
         type: choice
         default: 'default'
@@ -40,7 +40,7 @@ on:
           - '4 vCPU / 8 GB'
           - '8 vCPU / 16 GB'
       min_tasks:
-        description: 'Min tasks (ECS services only)'
+        description: 'Min tasks (ignored for redis, postgres)'
         required: false
         type: choice
         default: '1'
@@ -49,7 +49,7 @@ on:
           - '2'
           - '3'
       max_tasks:
-        description: 'Max tasks (ECS services only)'
+        description: 'Max tasks (ignored for redis, postgres)'
         required: false
         type: choice
         default: '2'
