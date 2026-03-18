@@ -4,8 +4,8 @@
   "requiresCompatibilities": [
     "FARGATE"
   ],
-  "cpu": "4096",
-  "memory": "8192",
+  "cpu": "2048",
+  "memory": "4096",
   "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-dev",
   "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-dev",
   "containerDefinitions": [

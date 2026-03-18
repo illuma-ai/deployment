@@ -17,6 +17,15 @@ on:
         options:
           - dev
           - prod
+      min_tasks:
+        description: 'Tasks per service (for start-all)'
+        required: false
+        type: choice
+        default: '1'
+        options:
+          - '1'
+          - '2'
+          - '3'
 
   schedule:
     - cron: '0 4 * * *'   # Auto-stop dev at 11 PM EST
@@ -56,6 +65,7 @@ jobs:
           ENV="${{ inputs.environment || 'dev' }}"
           CLUSTER="illuma-ai-ecs-cluster-$ENV"
           SERVICES="chat rag-api code-executor memory m365-mcp"
+          MIN_TASKS="${{ inputs.min_tasks || '1' }}"
 
           echo "## Environment Control: $ACTION ($ENV)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -67,7 +77,7 @@ jobs:
             if [ "$ACTION" = "stop-all" ]; then
               DESIRED=0
             else
-              DESIRED=1
+              DESIRED=$MIN_TASKS
             fi
             echo "Scaling $ECS_SVC to $DESIRED..."
             if aws ecs update-service --cluster "$CLUSTER" --service "$ECS_SVC" --desired-count "$DESIRED" --no-cli-pager > /dev/null 2>&1; then
