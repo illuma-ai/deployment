@@ -67,11 +67,7 @@ jobs:
             if [ "$ACTION" = "stop-all" ]; then
               DESIRED=0
             else
-              case "$SVC" in
-                chat|rag-api|code-executor|memory) DESIRED=2 ;;
-                m365-mcp) DESIRED=1 ;;
-                *) DESIRED=1 ;;
-              esac
+              DESIRED=1
             fi
             echo "Scaling $ECS_SVC to $DESIRED..."
             if aws ecs update-service --cluster "$CLUSTER" --service "$ECS_SVC" --desired-count "$DESIRED" --no-cli-pager > /dev/null 2>&1; then
