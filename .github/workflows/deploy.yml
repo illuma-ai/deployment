@@ -1,4 +1,4 @@
-name: Deploy Service
+name: Start Individual Service
 
 on:
   workflow_dispatch:

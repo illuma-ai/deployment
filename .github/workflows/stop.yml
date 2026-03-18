@@ -1,4 +1,4 @@
-name: Stop Service
+name: Stop Individual Service
 
 on:
   workflow_dispatch:
