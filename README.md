@@ -8,7 +8,7 @@ This repo has two workflows. Both are triggered from the **Actions** tab.
 
 ### 1. Deploy Service
 
-Deploys, stops, or starts a single service.
+Starts or stops a single service.
 
 **How to run:**
 1. Go to **Actions → Deploy Service**
@@ -19,14 +19,16 @@ Deploys, stops, or starts a single service.
 |-------|---------|-------------|
 | **service** | chat, rag-api, code-executor, memory, m365-mcp | Which service |
 | **environment** | dev, prod | Target environment |
-| **action** | deploy, stop, start | What to do |
-| **ref** | Any branch or tag | Code version to deploy (only used with `deploy` action) |
+| **action** | start, stop | What to do |
+| **ref** | Any branch or tag | Code version to deploy (ignored for stop) |
+| **cpu_memory** | default, 1 vCPU / 2 GB, 2 vCPU / 4 GB, 2 vCPU / 8 GB, 4 vCPU / 8 GB, 8 vCPU / 16 GB | Resource allocation (ignored for stop) |
+| **min_tasks** | 1, 2, 3 | Minimum running tasks / auto-scaling floor (ignored for stop) |
+| **max_tasks** | 1, 2, 3 | Maximum running tasks / auto-scaling ceiling (ignored for stop) |
 
 #### What each action does
 
-- **deploy** — Builds a new Docker image from the selected branch, pushes it, and deploys it. Waits for health check to pass before marking complete.
-- **stop** — Scales the service to 0 running tasks. Use this to shut down a single service.
-- **start** — Scales the service back up to its default task count.
+- **start** — Builds a new Docker image from the selected branch, pushes it, deploys it, and configures auto-scaling. Waits for health check to pass before marking complete.
+- **stop** — Scales the service to 0 running tasks. All other inputs are ignored.
 
 #### Auto-deploy
 
@@ -52,6 +54,8 @@ Starts or stops **all services at once**. Use this for demos.
 |-------|---------|-------------|
 | **action** | start-all, stop-all | Start or stop everything |
 | **environment** | dev, prod | Target environment |
+| **cpu_memory** | default, 1 vCPU / 2 GB, 2 vCPU / 4 GB, 2 vCPU / 8 GB, 4 vCPU / 8 GB, 8 vCPU / 16 GB | Resource override for all services (ignored for stop-all) |
+| **min_tasks** | 1, 2, 3 | Tasks per service (ignored for stop-all) |
 
 #### Scheduled automation
 
@@ -75,7 +79,8 @@ Click on any workflow run to see real-time progress:
 ✓ Build & push image      — builds Docker image, pushes to registry
 ✓ Update task definition  — updates service config with new image
 ✓ Deploy                  — deploys and waits for health check
-✓ Deployment summary      — final status
+✓ Configure auto-scaling  — sets min/max task scaling
+✓ Deployment summary      — final status with resource details
 ```
 
 Click on any failed step to see full logs.
@@ -85,7 +90,7 @@ Click on any failed step to see full logs.
 ## Common Tasks
 
 **Deploy a feature branch for testing:**
-Deploy Service → service = yours, environment = dev, action = deploy, ref = your-branch-name
+Deploy Service → service = yours, environment = dev, action = start, ref = your-branch-name
 
 **Start everything for a demo:**
 Environment Control → action = start-all, environment = dev
@@ -93,11 +98,11 @@ Environment Control → action = start-all, environment = dev
 **Shut down after demo:**
 Environment Control → action = stop-all, environment = dev
 
-**Restart one service:**
-Deploy Service → action = stop, then action = start
+**Scale up for load testing:**
+Deploy Service → action = start, cpu_memory = 4 vCPU / 8 GB, min_tasks = 2, max_tasks = 3
 
 **Rollback to a previous version:**
-Deploy Service → action = deploy, ref = previous branch or tag
+Deploy Service → action = start, ref = previous branch or tag
 
 ---
 
