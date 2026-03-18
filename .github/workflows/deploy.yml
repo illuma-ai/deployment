@@ -198,7 +198,7 @@ jobs:
           service: illuma-ai-${{ needs.resolve.outputs.service }}-svc-${{ needs.resolve.outputs.environment }}
           cluster: illuma-ai-ecs-cluster-${{ needs.resolve.outputs.environment }}
           wait-for-service-stability: true
-          wait-for-minutes: 10
+          wait-for-minutes: 15
 
       - name: Configure auto-scaling
         run: |
