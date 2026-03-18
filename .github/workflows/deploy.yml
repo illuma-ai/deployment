@@ -87,6 +87,7 @@ jobs:
       min_tasks: ${{ steps.resolve.outputs.min_tasks }}
       max_tasks: ${{ steps.resolve.outputs.max_tasks }}
       is_managed: ${{ steps.resolve.outputs.is_managed }}
+      is_ecs_only: ${{ steps.resolve.outputs.is_ecs_only }}
     steps:
       - name: Resolve inputs
         id: resolve
@@ -105,6 +106,11 @@ jobs:
             echo "min_tasks=1" >> $GITHUB_OUTPUT
             echo "max_tasks=2" >> $GITHUB_OUTPUT
             echo "is_managed=false" >> $GITHUB_OUTPUT
+            if [ "$SERVICE" = "mongodb" ]; then
+              echo "is_ecs_only=true" >> $GITHUB_OUTPUT
+            else
+              echo "is_ecs_only=false" >> $GITHUB_OUTPUT
+            fi
           else
             SVC="${{ inputs.service }}"
             echo "service=$SVC" >> $GITHUB_OUTPUT
@@ -116,8 +122,13 @@ jobs:
             echo "max_tasks=${{ inputs.max_tasks || '2' }}" >> $GITHUB_OUTPUT
             if [ "$SVC" = "redis" ] || [ "$SVC" = "postgres" ]; then
               echo "is_managed=true" >> $GITHUB_OUTPUT
+              echo "is_ecs_only=false" >> $GITHUB_OUTPUT
+            elif [ "$SVC" = "mongodb" ]; then
+              echo "is_managed=false" >> $GITHUB_OUTPUT
+              echo "is_ecs_only=true" >> $GITHUB_OUTPUT
             else
               echo "is_managed=false" >> $GITHUB_OUTPUT
+              echo "is_ecs_only=false" >> $GITHUB_OUTPUT
             fi
           fi
 
@@ -181,10 +192,37 @@ jobs:
 
           echo "- **Environment:** $ENV" >> $GITHUB_STEP_SUMMARY
 
+  start-ecs:
+    name: "Start: ${{ needs.resolve.outputs.service }} in ${{ needs.resolve.outputs.environment }}"
+    needs: resolve
+    if: needs.resolve.outputs.is_ecs_only == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_ACCESS_KEY_ID_PROD || secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_SECRET_ACCESS_KEY_PROD || secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Scale up ECS service
+        run: |
+          SERVICE="${{ needs.resolve.outputs.service }}"
+          ENV="${{ needs.resolve.outputs.environment }}"
+          ECS_SVC="illuma-ai-${SERVICE}-svc-${ENV}"
+          CLUSTER="illuma-ai-ecs-cluster-${ENV}"
+          MIN="${{ needs.resolve.outputs.min_tasks }}"
+          echo "Scaling $ECS_SVC to $MIN in $CLUSTER..."
+          aws ecs update-service --cluster "$CLUSTER" --service "$ECS_SVC" --desired-count "$MIN" --no-cli-pager > /dev/null 2>&1
+          echo "## Start ECS Service" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service:** $ECS_SVC" >> $GITHUB_STEP_SUMMARY
+          echo "- **Desired count:** $MIN" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** $ENV" >> $GITHUB_STEP_SUMMARY
+
   deploy:
     name: "Deploy: ${{ needs.resolve.outputs.service }} -> ${{ needs.resolve.outputs.environment }}"
     needs: resolve
-    if: needs.resolve.outputs.is_managed == 'false'
+    if: needs.resolve.outputs.is_managed == 'false' && needs.resolve.outputs.is_ecs_only == 'false'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout deployment repo
