@@ -6,13 +6,13 @@ This repo has four workflows. All are triggered from the **Actions** tab.
 
 ---
 
-### 1. Deploy Service
+### 1. Start Individual Service
 
-Builds and deploys a single service.
+Builds and deploys a single ECS service, or starts a managed service (Redis/Postgres).
 
 | Input | Options | Description |
 |-------|---------|-------------|
-| **service** | chat, rag-api, code-executor, memory, m365-mcp, mongodb | Which service |
+| **service** | chat, rag-api, code-executor, memory, m365-mcp, mongodb, redis, postgres | Which service |
 | **environment** | dev, prod | Target environment |
 | **ref** | Any branch or tag | Code version to deploy |
 | **cpu_memory** | default, 1 vCPU / 2 GB, 2 vCPU / 4 GB, 2 vCPU / 8 GB, 4 vCPU / 8 GB, 8 vCPU / 16 GB | Resource allocation |
@@ -23,25 +23,25 @@ Also runs automatically when code is pushed to `develop` (→ dev) or `main` (�
 
 ---
 
-### 2. Stop Service
+### 2. Stop Individual Service
 
-Stops a single service (scales to 0).
+Stops a single service (scales ECS to 0, stops RDS, or deletes ElastiCache).
 
 | Input | Options | Description |
 |-------|---------|-------------|
-| **service** | chat, rag-api, code-executor, memory, m365-mcp, mongodb | Which service |
+| **service** | chat, rag-api, code-executor, memory, m365-mcp, mongodb, redis, postgres | Which service |
 | **environment** | dev, prod | Target environment |
 
 ---
 
 ### 3. Start All Services
 
-Starts all services at once. Use this for demos.
+Starts all services at once — managed services (Redis, Postgres) first, then ECS services.
 
 | Input | Options | Description |
 |-------|---------|-------------|
 | **environment** | dev, prod | Target environment |
-| **cpu_memory** | default, 1 vCPU / 2 GB, 2 vCPU / 4 GB, 2 vCPU / 8 GB, 4 vCPU / 8 GB, 8 vCPU / 16 GB | Resource override for all services |
+| **cpu_memory** | default, 1 vCPU / 2 GB, 2 vCPU / 4 GB, 2 vCPU / 8 GB, 4 vCPU / 8 GB, 8 vCPU / 16 GB | Resource override for ECS services |
 | **min_tasks** | 1, 2, 3 | Tasks per service |
 
 Runs automatically at **8 AM EST** every day (dev).
@@ -50,7 +50,7 @@ Runs automatically at **8 AM EST** every day (dev).
 
 ### 4. Stop All Services
 
-Stops all services at once (scales everything to 0).
+Stops all services — ECS scaled to 0, Postgres stopped, Redis deleted.
 
 | Input | Options | Description |
 |-------|---------|-------------|
@@ -82,7 +82,7 @@ Click on any failed step to see full logs.
 ## Common Tasks
 
 **Deploy a feature branch for testing:**
-Deploy Service → service = yours, environment = dev, ref = your-branch-name
+Start Individual Service → service = yours, environment = dev, ref = your-branch-name
 
 **Start everything for a demo:**
 Start All Services → environment = dev
@@ -91,10 +91,13 @@ Start All Services → environment = dev
 Stop All Services → environment = dev
 
 **Scale up for load testing:**
-Deploy Service → cpu_memory = 4 vCPU / 8 GB, min_tasks = 2, max_tasks = 3
+Start Individual Service → cpu_memory = 4 vCPU / 8 GB, min_tasks = 2, max_tasks = 3
 
 **Rollback to a previous version:**
-Deploy Service → ref = previous branch or tag
+Start Individual Service → ref = previous branch or tag
+
+**Start just the database layer:**
+Start Individual Service → service = postgres, then redis
 
 ---
 

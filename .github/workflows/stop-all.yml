@@ -37,14 +37,24 @@ jobs:
         run: |
           ENV="${{ inputs.environment || 'dev' }}"
           CLUSTER="illuma-ai-ecs-cluster-$ENV"
-          SERVICES="chat rag-api code-executor memory m365-mcp mongodb"
+          ECS_SERVICES="chat rag-api code-executor memory m365-mcp mongodb"
+
+          # Resource name mapping (dev uses gaavi prefix for redis/postgres)
+          if [ "$ENV" = "dev" ]; then
+            REDIS_ID="gaavi-redis-dev"
+            POSTGRES_ID="gaavi-postgres-dev"
+          else
+            REDIS_ID="illuma-ai-redis-prod"
+            POSTGRES_ID="illuma-ai-postgres-prod"
+          fi
 
           echo "## Stop All Services ($ENV)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
 
-          for SVC in $SERVICES; do
+          # Stop ECS services
+          for SVC in $ECS_SERVICES; do
             ECS_SVC="illuma-ai-${SVC}-svc-${ENV}"
             echo "Scaling $ECS_SVC to 0..."
             if aws ecs update-service --cluster "$CLUSTER" --service "$ECS_SVC" --desired-count 0 --no-cli-pager > /dev/null 2>&1; then
@@ -53,3 +63,20 @@ jobs:
               echo "| $SVC | FAILED |" >> $GITHUB_STEP_SUMMARY
             fi
           done
+
+          # Stop Postgres (RDS supports stop/start)
+          echo "Stopping RDS instance $POSTGRES_ID..."
+          if aws rds stop-db-instance --db-instance-identifier "$POSTGRES_ID" --no-cli-pager > /dev/null 2>&1; then
+            echo "| postgres | Stopped |" >> $GITHUB_STEP_SUMMARY
+          else
+            STATUS=$(aws rds describe-db-instances --db-instance-identifier "$POSTGRES_ID" --query 'DBInstances[0].DBInstanceStatus' --output text 2>/dev/null)
+            echo "| postgres | $STATUS (may already be stopped) |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Stop Redis (ElastiCache has no stop — must delete)
+          echo "Deleting ElastiCache cluster $REDIS_ID..."
+          if aws elasticache delete-cache-cluster --cache-cluster-id "$REDIS_ID" --no-cli-pager > /dev/null 2>&1; then
+            echo "| redis | Deleting |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| redis | Already deleted or not found |" >> $GITHUB_STEP_SUMMARY
+          fi

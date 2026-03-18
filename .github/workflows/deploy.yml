@@ -14,6 +14,8 @@ on:
           - memory
           - m365-mcp
           - mongodb
+          - redis
+          - postgres
       environment:
         description: 'Target environment'
         required: true
@@ -22,11 +24,11 @@ on:
           - dev
           - prod
       ref:
-        description: 'Git branch/tag to deploy'
+        description: 'Git branch/tag to deploy (ECS services only)'
         required: false
         default: 'main'
       cpu_memory:
-        description: 'CPU / Memory'
+        description: 'CPU / Memory (ECS services only)'
         required: false
         type: choice
         default: 'default'
@@ -38,7 +40,7 @@ on:
           - '4 vCPU / 8 GB'
           - '8 vCPU / 16 GB'
       min_tasks:
-        description: 'Min tasks (auto-scaling minimum)'
+        description: 'Min tasks (ECS services only)'
         required: false
         type: choice
         default: '1'
@@ -47,7 +49,7 @@ on:
           - '2'
           - '3'
       max_tasks:
-        description: 'Max tasks (auto-scaling maximum)'
+        description: 'Max tasks (ECS services only)'
         required: false
         type: choice
         default: '2'
@@ -84,6 +86,7 @@ jobs:
       cpu_memory: ${{ steps.resolve.outputs.cpu_memory }}
       min_tasks: ${{ steps.resolve.outputs.min_tasks }}
       max_tasks: ${{ steps.resolve.outputs.max_tasks }}
+      is_managed: ${{ steps.resolve.outputs.is_managed }}
     steps:
       - name: Resolve inputs
         id: resolve
@@ -101,19 +104,87 @@ jobs:
             echo "cpu_memory=default" >> $GITHUB_OUTPUT
             echo "min_tasks=1" >> $GITHUB_OUTPUT
             echo "max_tasks=2" >> $GITHUB_OUTPUT
+            echo "is_managed=false" >> $GITHUB_OUTPUT
           else
-            echo "service=${{ inputs.service }}" >> $GITHUB_OUTPUT
+            SVC="${{ inputs.service }}"
+            echo "service=$SVC" >> $GITHUB_OUTPUT
             echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
             echo "ref=${{ inputs.ref || 'main' }}" >> $GITHUB_OUTPUT
             echo "sha=" >> $GITHUB_OUTPUT
             echo "cpu_memory=${{ inputs.cpu_memory || 'default' }}" >> $GITHUB_OUTPUT
             echo "min_tasks=${{ inputs.min_tasks || '1' }}" >> $GITHUB_OUTPUT
             echo "max_tasks=${{ inputs.max_tasks || '2' }}" >> $GITHUB_OUTPUT
+            if [ "$SVC" = "redis" ] || [ "$SVC" = "postgres" ]; then
+              echo "is_managed=true" >> $GITHUB_OUTPUT
+            else
+              echo "is_managed=false" >> $GITHUB_OUTPUT
+            fi
           fi
+
+  managed:
+    name: "Start: ${{ needs.resolve.outputs.service }} in ${{ needs.resolve.outputs.environment }}"
+    needs: resolve
+    if: needs.resolve.outputs.is_managed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_ACCESS_KEY_ID_PROD || secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ needs.resolve.outputs.environment == 'prod' && secrets.AWS_SECRET_ACCESS_KEY_PROD || secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Start managed service
+        run: |
+          SERVICE="${{ needs.resolve.outputs.service }}"
+          ENV="${{ needs.resolve.outputs.environment }}"
+
+          echo "## Start Managed Service" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$SERVICE" = "postgres" ]; then
+            if [ "$ENV" = "dev" ]; then PG_ID="gaavi-postgres-dev"; else PG_ID="illuma-ai-postgres-prod"; fi
+            PG_STATUS=$(aws rds describe-db-instances --db-instance-identifier "$PG_ID" --query 'DBInstances[0].DBInstanceStatus' --output text 2>/dev/null)
+            if [ "$PG_STATUS" = "stopped" ]; then
+              echo "Starting RDS $PG_ID..."
+              aws rds start-db-instance --db-instance-identifier "$PG_ID" --no-cli-pager > /dev/null 2>&1
+              echo "- **postgres**: Starting" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- **postgres**: $PG_STATUS" >> $GITHUB_STEP_SUMMARY
+            fi
+
+          elif [ "$SERVICE" = "redis" ]; then
+            if [ "$ENV" = "dev" ]; then
+              REDIS_ID="gaavi-redis-dev"
+              REDIS_SUBNET="gaavi-redis-subnet-dev"
+              REDIS_SG="sg-0c13a08315a94c917"
+            else
+              REDIS_ID="illuma-ai-redis-prod"
+              REDIS_SUBNET="illuma-ai-redis-subnet-prod"
+              REDIS_SG="sg-092dd549288dd6f6e"
+            fi
+            REDIS_STATUS=$(aws elasticache describe-cache-clusters --cache-cluster-id "$REDIS_ID" --query 'CacheClusters[0].CacheClusterStatus' --output text 2>/dev/null || echo "not-found")
+            if [ "$REDIS_STATUS" = "not-found" ]; then
+              echo "Creating ElastiCache $REDIS_ID..."
+              aws elasticache create-cache-cluster \
+                --cache-cluster-id "$REDIS_ID" \
+                --cache-node-type cache.t3.micro \
+                --engine redis \
+                --num-cache-nodes 1 \
+                --cache-subnet-group-name "$REDIS_SUBNET" \
+                --security-group-ids "$REDIS_SG" \
+                --no-cli-pager > /dev/null 2>&1
+              echo "- **redis**: Creating" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- **redis**: $REDIS_STATUS" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+          echo "- **Environment:** $ENV" >> $GITHUB_STEP_SUMMARY
 
   deploy:
     name: "Deploy: ${{ needs.resolve.outputs.service }} -> ${{ needs.resolve.outputs.environment }}"
     needs: resolve
+    if: needs.resolve.outputs.is_managed == 'false'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout deployment repo

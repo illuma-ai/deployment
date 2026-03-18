@@ -54,7 +54,60 @@ jobs:
           aws-secret-access-key: ${{ (inputs.environment || 'dev') == 'prod' && secrets.AWS_SECRET_ACCESS_KEY_PROD || secrets.AWS_SECRET_ACCESS_KEY_DEV }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Start all services
+      - name: Start managed services (Redis + Postgres)
+        run: |
+          ENV="${{ inputs.environment || 'dev' }}"
+
+          # Resource name mapping
+          if [ "$ENV" = "dev" ]; then
+            REDIS_ID="gaavi-redis-dev"
+            REDIS_SUBNET="gaavi-redis-subnet-dev"
+            REDIS_SG="sg-0c13a08315a94c917"
+            POSTGRES_ID="gaavi-postgres-dev"
+          else
+            REDIS_ID="illuma-ai-redis-prod"
+            REDIS_SUBNET="illuma-ai-redis-subnet-prod"
+            REDIS_SG="sg-092dd549288dd6f6e"
+            POSTGRES_ID="illuma-ai-postgres-prod"
+          fi
+
+          echo "## Managed Services ($ENV)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Start Postgres (RDS)
+          PG_STATUS=$(aws rds describe-db-instances --db-instance-identifier "$POSTGRES_ID" --query 'DBInstances[0].DBInstanceStatus' --output text 2>/dev/null || echo "not-found")
+          if [ "$PG_STATUS" = "stopped" ]; then
+            echo "Starting RDS $POSTGRES_ID..."
+            aws rds start-db-instance --db-instance-identifier "$POSTGRES_ID" --no-cli-pager > /dev/null 2>&1
+            echo "| postgres | Starting |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$PG_STATUS" = "available" ]; then
+            echo "| postgres | Already running |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| postgres | $PG_STATUS |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Start Redis (recreate if deleted)
+          REDIS_STATUS=$(aws elasticache describe-cache-clusters --cache-cluster-id "$REDIS_ID" --query 'CacheClusters[0].CacheClusterStatus' --output text 2>/dev/null || echo "not-found")
+          if [ "$REDIS_STATUS" = "not-found" ]; then
+            echo "Creating ElastiCache $REDIS_ID..."
+            aws elasticache create-cache-cluster \
+              --cache-cluster-id "$REDIS_ID" \
+              --cache-node-type cache.t3.micro \
+              --engine redis \
+              --num-cache-nodes 1 \
+              --cache-subnet-group-name "$REDIS_SUBNET" \
+              --security-group-ids "$REDIS_SG" \
+              --no-cli-pager > /dev/null 2>&1
+            echo "| redis | Creating |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$REDIS_STATUS" = "available" ]; then
+            echo "| redis | Already running |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| redis | $REDIS_STATUS |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Start ECS services
         run: |
           ENV="${{ inputs.environment || 'dev' }}"
           CLUSTER="illuma-ai-ecs-cluster-$ENV"
@@ -74,7 +127,8 @@ jobs:
             esac
           fi
 
-          echo "## Start All Services ($ENV)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ECS Services ($ENV)" >> $GITHUB_STEP_SUMMARY
           if [ -n "$CPU" ]; then
             echo "**CPU/Memory override:** $CPU_MEM" >> $GITHUB_STEP_SUMMARY
           fi
