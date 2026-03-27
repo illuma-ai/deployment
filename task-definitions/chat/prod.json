@@ -182,6 +182,10 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/chat-EJCW6n:JINA_API_KEY::"
         },
         {
+          "name": "NEXILLO_MCP_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/chat-EJCW6n:NEXILLO_MCP_URL::"
+        },
+        {
           "name": "USE_REDIS",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/chat-EJCW6n:USE_REDIS::"
         },

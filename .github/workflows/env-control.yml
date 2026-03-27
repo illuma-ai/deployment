@@ -111,7 +111,7 @@ jobs:
         run: |
           ENV="${{ inputs.environment || 'dev' }}"
           CLUSTER="illuma-ai-ecs-cluster-$ENV"
-          SERVICES="chat rag-api code-executor memory m365-mcp mongodb"
+          SERVICES="chat rag-api code-executor memory m365-mcp nexillo-mcp mongodb"
           MIN_TASKS="${{ inputs.min_tasks || '1' }}"
           CPU_MEM="${{ inputs.cpu_memory || 'default' }}"
 
@@ -174,7 +174,7 @@ jobs:
           sleep 90
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Health Check" >> $GITHUB_STEP_SUMMARY
-          for SVC in chat rag-api code-executor memory m365-mcp mongodb; do
+          for SVC in chat rag-api code-executor memory m365-mcp nexillo-mcp mongodb; do
             COUNT=$(aws ecs describe-services --cluster "$CLUSTER" --services "illuma-ai-${SVC}-svc-${ENV}" --query 'services[0].runningCount' --output text 2>/dev/null || echo "N/A")
             echo "- **$SVC**: $COUNT running" >> $GITHUB_STEP_SUMMARY
           done
