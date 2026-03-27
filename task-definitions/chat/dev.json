@@ -188,6 +188,10 @@
         {
           "name": "REDIS_URI",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:REDIS_URI::"
+        },
+        {
+          "name": "DD_LLMOBS_ENABLED",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:DD_LLMOBS_ENABLED::"
         }
       ],
       "logConfiguration": {
