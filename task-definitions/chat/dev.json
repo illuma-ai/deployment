@@ -1,7 +1,9 @@
 {
   "family": "illuma-ai-chat-td-dev",
   "networkMode": "awsvpc",
-  "requiresCompatibilities": ["FARGATE"],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
   "cpu": "2048",
   "memory": "4096",
   "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-dev",
@@ -19,46 +21,174 @@
         }
       ],
       "secrets": [
-        { "name": "HOST", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:HOST::" },
-        { "name": "PORT", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:PORT::" },
-        { "name": "DOMAIN_CLIENT", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:DOMAIN_CLIENT::" },
-        { "name": "DOMAIN_SERVER", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:DOMAIN_SERVER::" },
-        { "name": "NO_INDEX", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:NO_INDEX::" },
-        { "name": "TRUST_PROXY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:TRUST_PROXY::" },
-        { "name": "CONFIG_PATH", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CONFIG_PATH::" },
-        { "name": "CONSOLE_JSON", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CONSOLE_JSON::" },
-        { "name": "APP_TITLE", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:APP_TITLE::" },
-        { "name": "ENDPOINTS", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ENDPOINTS::" },
-        { "name": "MONGO_URI", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MONGO_URI::" },
-        { "name": "ALLOW_EMAIL_LOGIN", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ALLOW_EMAIL_LOGIN::" },
-        { "name": "ALLOW_REGISTRATION", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ALLOW_REGISTRATION::" },
-        { "name": "ALLOW_SOCIAL_LOGIN", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ALLOW_SOCIAL_LOGIN::" },
-        { "name": "ALLOW_UNVERIFIED_EMAIL_LOGIN", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ALLOW_UNVERIFIED_EMAIL_LOGIN::" },
-        { "name": "SESSION_EXPIRY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:SESSION_EXPIRY::" },
-        { "name": "REFRESH_TOKEN_EXPIRY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:REFRESH_TOKEN_EXPIRY::" },
-        { "name": "JWT_SECRET", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:JWT_SECRET::" },
-        { "name": "JWT_REFRESH_SECRET", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:JWT_REFRESH_SECRET::" },
-        { "name": "CREDS_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CREDS_KEY::" },
-        { "name": "CREDS_IV", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CREDS_IV::" },
-        { "name": "BEDROCK_AWS_DEFAULT_REGION", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:BEDROCK_AWS_DEFAULT_REGION::" },
-        { "name": "BEDROCK_AWS_ACCESS_KEY_ID", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:BEDROCK_AWS_ACCESS_KEY_ID::" },
-        { "name": "BEDROCK_AWS_SECRET_ACCESS_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:BEDROCK_AWS_SECRET_ACCESS_KEY::" },
-        { "name": "AWS_ACCESS_KEY_ID", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:AWS_ACCESS_KEY_ID::" },
-        { "name": "AWS_SECRET_ACCESS_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:AWS_SECRET_ACCESS_KEY::" },
-        { "name": "AWS_REGION", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:AWS_REGION::" },
-        { "name": "AWS_BUCKET_NAME", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:AWS_BUCKET_NAME::" },
-        { "name": "RAG_API_URL", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:RAG_API_URL::" },
-        { "name": "CODE_EXECUTOR_BASEURL", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CODE_EXECUTOR_BASEURL::" },
-        { "name": "CODE_EXECUTOR_API_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CODE_EXECUTOR_API_KEY::" },
-        { "name": "SIMPLEMEM_API_URL", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:SIMPLEMEM_API_URL::" },
-        { "name": "MS365_MCP_URL", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MS365_MCP_URL::" },
-        { "name": "MS365_CLIENT_ID", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MS365_CLIENT_ID::" },
-        { "name": "MS365_CLIENT_SECRET", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MS365_CLIENT_SECRET::" },
-        { "name": "MS365_REDIRECT_URI", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MS365_REDIRECT_URI::" },
-        { "name": "SEARCH", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:SEARCH::" },
-        { "name": "SERPER_API_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:SERPER_API_KEY::" },
-        { "name": "FIRECRAWL_API_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:FIRECRAWL_API_KEY::" },
-        { "name": "JINA_API_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:JINA_API_KEY::" }
+        {
+          "name": "HOST",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:HOST::"
+        },
+        {
+          "name": "PORT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:PORT::"
+        },
+        {
+          "name": "DOMAIN_CLIENT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:DOMAIN_CLIENT::"
+        },
+        {
+          "name": "DOMAIN_SERVER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:DOMAIN_SERVER::"
+        },
+        {
+          "name": "NO_INDEX",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:NO_INDEX::"
+        },
+        {
+          "name": "TRUST_PROXY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:TRUST_PROXY::"
+        },
+        {
+          "name": "CONFIG_PATH",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CONFIG_PATH::"
+        },
+        {
+          "name": "CONSOLE_JSON",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CONSOLE_JSON::"
+        },
+        {
+          "name": "APP_TITLE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:APP_TITLE::"
+        },
+        {
+          "name": "ENDPOINTS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ENDPOINTS::"
+        },
+        {
+          "name": "MONGO_URI",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MONGO_URI::"
+        },
+        {
+          "name": "ALLOW_EMAIL_LOGIN",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ALLOW_EMAIL_LOGIN::"
+        },
+        {
+          "name": "ALLOW_REGISTRATION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ALLOW_REGISTRATION::"
+        },
+        {
+          "name": "ALLOW_SOCIAL_LOGIN",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ALLOW_SOCIAL_LOGIN::"
+        },
+        {
+          "name": "ALLOW_UNVERIFIED_EMAIL_LOGIN",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ALLOW_UNVERIFIED_EMAIL_LOGIN::"
+        },
+        {
+          "name": "SESSION_EXPIRY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:SESSION_EXPIRY::"
+        },
+        {
+          "name": "REFRESH_TOKEN_EXPIRY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:REFRESH_TOKEN_EXPIRY::"
+        },
+        {
+          "name": "JWT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:JWT_SECRET::"
+        },
+        {
+          "name": "JWT_REFRESH_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:JWT_REFRESH_SECRET::"
+        },
+        {
+          "name": "CREDS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CREDS_KEY::"
+        },
+        {
+          "name": "CREDS_IV",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CREDS_IV::"
+        },
+        {
+          "name": "BEDROCK_AWS_DEFAULT_REGION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:BEDROCK_AWS_DEFAULT_REGION::"
+        },
+        {
+          "name": "BEDROCK_AWS_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:BEDROCK_AWS_ACCESS_KEY_ID::"
+        },
+        {
+          "name": "BEDROCK_AWS_SECRET_ACCESS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:BEDROCK_AWS_SECRET_ACCESS_KEY::"
+        },
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:AWS_ACCESS_KEY_ID::"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:AWS_SECRET_ACCESS_KEY::"
+        },
+        {
+          "name": "AWS_REGION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:AWS_REGION::"
+        },
+        {
+          "name": "AWS_BUCKET_NAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:AWS_BUCKET_NAME::"
+        },
+        {
+          "name": "RAG_API_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:RAG_API_URL::"
+        },
+        {
+          "name": "CODE_EXECUTOR_BASEURL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CODE_EXECUTOR_BASEURL::"
+        },
+        {
+          "name": "CODE_EXECUTOR_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:CODE_EXECUTOR_API_KEY::"
+        },
+        {
+          "name": "SIMPLEMEM_API_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:SIMPLEMEM_API_URL::"
+        },
+        {
+          "name": "MS365_MCP_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MS365_MCP_URL::"
+        },
+        {
+          "name": "MS365_CLIENT_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MS365_CLIENT_ID::"
+        },
+        {
+          "name": "MS365_CLIENT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MS365_CLIENT_SECRET::"
+        },
+        {
+          "name": "MS365_REDIRECT_URI",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MS365_REDIRECT_URI::"
+        },
+        {
+          "name": "SEARCH",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:SEARCH::"
+        },
+        {
+          "name": "SERPER_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:SERPER_API_KEY::"
+        },
+        {
+          "name": "FIRECRAWL_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:FIRECRAWL_API_KEY::"
+        },
+        {
+          "name": "JINA_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:JINA_API_KEY::"
+        },
+        {
+          "name": "USE_REDIS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:USE_REDIS::"
+        },
+        {
+          "name": "REDIS_URI",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:REDIS_URI::"
+        }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
@@ -69,7 +199,10 @@
         }
       },
       "healthCheck": {
-        "command": ["CMD-SHELL", "wget -q --spider http://localhost:3080/api/health || exit 1"],
+        "command": [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:3080/api/health || exit 1"
+        ],
         "interval": 30,
         "timeout": 10,
         "retries": 5,
