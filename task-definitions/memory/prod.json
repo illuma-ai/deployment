@@ -1,11 +1,9 @@
 {
   "family": "illuma-ai-memory-td-prod",
   "networkMode": "awsvpc",
-  "requiresCompatibilities": [
-    "FARGATE"
-  ],
-  "cpu": "1024",
-  "memory": "2048",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "2048",
+  "memory": "4096",
   "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-prod",
   "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-prod",
   "containerDefinitions": [
@@ -20,6 +18,25 @@
           "protocol": "tcp"
         }
       ],
+      "secrets": [
+        { "name": "PORT", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:PORT::" },
+        { "name": "LOG_LEVEL", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:LOG_LEVEL::" },
+        { "name": "ENDPOINT", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:ENDPOINT::" },
+        { "name": "VECTOR_STORE", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:VECTOR_STORE::" },
+        { "name": "AWS_ACCESS_KEY_ID", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:AWS_ACCESS_KEY_ID::" },
+        { "name": "AWS_SECRET_ACCESS_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:AWS_SECRET_ACCESS_KEY::" },
+        { "name": "AWS_REGION", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:AWS_REGION::" },
+        { "name": "BEDROCK_LLM_MODEL", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:BEDROCK_LLM_MODEL::" },
+        { "name": "BEDROCK_EMBEDDING_MODEL", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:BEDROCK_EMBEDDING_MODEL::" },
+        { "name": "EMBEDDING_DIMENSION", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:EMBEDDING_DIMENSION::" },
+        { "name": "POSTGRES_HOST", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:POSTGRES_HOST::" },
+        { "name": "POSTGRES_PORT", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:POSTGRES_PORT::" },
+        { "name": "POSTGRES_USER", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:POSTGRES_USER::" },
+        { "name": "POSTGRES_PASSWORD", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:POSTGRES_PASSWORD::" },
+        { "name": "POSTGRES_DB", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:POSTGRES_DB::" },
+        { "name": "ENABLE_CONFLICT_RESOLUTION", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:ENABLE_CONFLICT_RESOLUTION::" },
+        { "name": "CONFLICT_SIMILARITY_THRESHOLD", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/memory-YlIGU0:CONFLICT_SIMILARITY_THRESHOLD::" }
+      ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
@@ -29,14 +46,11 @@
         }
       },
       "healthCheck": {
-        "command": [
-          "CMD-SHELL",
-          "curl -f http://localhost:8001/health || exit 1"
-        ],
+        "command": ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"],
         "interval": 30,
-        "timeout": 5,
-        "retries": 3,
-        "startPeriod": 60
+        "timeout": 10,
+        "retries": 5,
+        "startPeriod": 120
       }
     }
   ]

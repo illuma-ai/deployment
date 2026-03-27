@@ -1,9 +1,7 @@
 {
   "family": "illuma-ai-m365-mcp-td-dev",
   "networkMode": "awsvpc",
-  "requiresCompatibilities": [
-    "FARGATE"
-  ],
+  "requiresCompatibilities": ["FARGATE"],
   "cpu": "1024",
   "memory": "2048",
   "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-dev",
@@ -20,6 +18,14 @@
           "protocol": "tcp"
         }
       ],
+      "secrets": [
+        { "name": "PORT", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/m365-mcp-mvjqQ4:PORT::" },
+        { "name": "LOG_LEVEL", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/m365-mcp-mvjqQ4:LOG_LEVEL::" },
+        { "name": "MS365_MCP_OUTPUT_FORMAT", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/m365-mcp-mvjqQ4:MS365_MCP_OUTPUT_FORMAT::" },
+        { "name": "M365_MCP_CLIENT_SECRET", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/m365-mcp-mvjqQ4:M365_MCP_CLIENT_SECRET::" },
+        { "name": "M365_MCP_TENANT_ID", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/m365-mcp-mvjqQ4:M365_MCP_TENANT_ID::" },
+        { "name": "M365_MCP_CLIENT_ID", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/m365-mcp-mvjqQ4:M365_MCP_CLIENT_ID::" }
+      ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
@@ -29,13 +35,10 @@
         }
       },
       "healthCheck": {
-        "command": [
-          "CMD-SHELL",
-          "wget -q --spider http://localhost:3003/health || exit 1"
-        ],
+        "command": ["CMD-SHELL", "curl -f http://localhost:3003/sharepoint-mcp/health || exit 1"],
         "interval": 30,
-        "timeout": 5,
-        "retries": 3,
+        "timeout": 10,
+        "retries": 5,
         "startPeriod": 60
       }
     }

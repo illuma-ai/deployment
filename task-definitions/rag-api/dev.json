@@ -1,9 +1,7 @@
 {
   "family": "illuma-ai-rag-api-td-dev",
   "networkMode": "awsvpc",
-  "requiresCompatibilities": [
-    "FARGATE"
-  ],
+  "requiresCompatibilities": ["FARGATE"],
   "cpu": "2048",
   "memory": "4096",
   "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-dev",
@@ -20,6 +18,29 @@
           "protocol": "tcp"
         }
       ],
+      "environment": [
+        { "name": "RAG_THREAD_POOL_SIZE", "value": "4" },
+        { "name": "BEDROCK_OCR_MAX_WORKERS", "value": "20" }
+      ],
+      "secrets": [
+        { "name": "RAG_HOST", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:RAG_HOST::" },
+        { "name": "RAG_PORT", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:RAG_PORT::" },
+        { "name": "AWS_DEFAULT_REGION", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:AWS_DEFAULT_REGION::" },
+        { "name": "AWS_ACCESS_KEY_ID", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:AWS_ACCESS_KEY_ID::" },
+        { "name": "AWS_SECRET_ACCESS_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:AWS_SECRET_ACCESS_KEY::" },
+        { "name": "EMBEDDINGS_PROVIDER", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:EMBEDDINGS_PROVIDER::" },
+        { "name": "EMBEDDINGS_MODEL", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:EMBEDDINGS_MODEL::" },
+        { "name": "VECTOR_DB_TYPE", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:VECTOR_DB_TYPE::" },
+        { "name": "POSTGRES_DB", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:POSTGRES_DB::" },
+        { "name": "POSTGRES_USER", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:POSTGRES_USER::" },
+        { "name": "POSTGRES_PASSWORD", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:POSTGRES_PASSWORD::" },
+        { "name": "DB_HOST", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:DB_HOST::" },
+        { "name": "DB_PORT", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:DB_PORT::" },
+        { "name": "COLLECTION_NAME", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:COLLECTION_NAME::" },
+        { "name": "CHUNK_SIZE", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:CHUNK_SIZE::" },
+        { "name": "CHUNK_OVERLAP", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:CHUNK_OVERLAP::" },
+        { "name": "JWT_SECRET", "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/rag-api-QUTb3s:JWT_SECRET::" }
+      ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
@@ -29,13 +50,10 @@
         }
       },
       "healthCheck": {
-        "command": [
-          "CMD-SHELL",
-          "curl -f http://localhost:8000/health || exit 1"
-        ],
+        "command": ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"],
         "interval": 30,
-        "timeout": 5,
-        "retries": 3,
+        "timeout": 10,
+        "retries": 5,
         "startPeriod": 120
       }
     }
