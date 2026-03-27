@@ -1,0 +1,156 @@
+name: Deploy Service (Reusable)
+
+# Reusable workflow template — called by service repos via:
+#   uses: illuma-ai/deployment/.github/workflows/deploy-service.yml@main
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: 'Service name (e.g., code-executor, rag-api, chat)'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment (dev or prod)'
+        required: true
+        type: string
+      task-definition-path:
+        description: 'Path to task definition JSON in the calling repo'
+        required: true
+        type: string
+      cpu_memory:
+        description: 'CPU / Memory override'
+        required: false
+        type: string
+        default: 'default'
+      min_tasks:
+        description: 'Min tasks for auto-scaling'
+        required: false
+        type: string
+        default: '1'
+      max_tasks:
+        description: 'Max tasks for auto-scaling'
+        required: false
+        type: string
+        default: '2'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    name: "Deploy: ${{ inputs.service }} -> ${{ inputs.environment }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout calling repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ inputs.environment == 'prod' && secrets.AWS_ACCESS_KEY_ID_PROD || secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ inputs.environment == 'prod' && secrets.AWS_SECRET_ACCESS_KEY_PROD || secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SERVICE: ${{ inputs.service }}
+          ENV: ${{ inputs.environment }}
+        run: |
+          IMAGE_REPO="$ECR_REGISTRY/illuma-ai-$SERVICE-$ENV"
+          SHA="${{ github.sha }}"
+          SHORT_SHA="${SHA:0:8}"
+          echo "Building $IMAGE_REPO..."
+          docker build \
+            -t "$IMAGE_REPO:$SHA" \
+            -t "$IMAGE_REPO:$SHORT_SHA" \
+            -t "$IMAGE_REPO:$ENV" \
+            -t "$IMAGE_REPO:latest" \
+            .
+          docker push "$IMAGE_REPO" --all-tags
+          echo "image=$IMAGE_REPO:$SHA" >> $GITHUB_OUTPUT
+
+      - name: Override task definition resources
+        if: inputs.cpu_memory != 'default'
+        run: |
+          TASK_DEF="${{ inputs.task-definition-path }}"
+          CPU_MEM="${{ inputs.cpu_memory }}"
+          case "$CPU_MEM" in
+            "1 vCPU / 2 GB")   CPU="1024";  MEM="2048" ;;
+            "2 vCPU / 4 GB")   CPU="2048";  MEM="4096" ;;
+            "2 vCPU / 8 GB")   CPU="2048";  MEM="8192" ;;
+            "4 vCPU / 8 GB")   CPU="4096";  MEM="8192" ;;
+            "8 vCPU / 16 GB")  CPU="8192";  MEM="16384" ;;
+          esac
+          echo "Overriding $TASK_DEF: CPU=$CPU, Memory=$MEM"
+          jq --arg cpu "$CPU" --arg mem "$MEM" '.cpu = $cpu | .memory = $mem' "$TASK_DEF" > tmp.json && mv tmp.json "$TASK_DEF"
+
+      - name: Render ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ inputs.task-definition-path }}
+          container-name: illuma-ai-${{ inputs.service }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: illuma-ai-${{ inputs.service }}-svc-${{ inputs.environment }}
+          cluster: illuma-ai-ecs-cluster-${{ inputs.environment }}
+          wait-for-service-stability: true
+          wait-for-minutes: 15
+
+      - name: Configure auto-scaling
+        run: |
+          CLUSTER="illuma-ai-ecs-cluster-${{ inputs.environment }}"
+          ECS_SVC="illuma-ai-${{ inputs.service }}-svc-${{ inputs.environment }}"
+          RESOURCE="service/${CLUSTER}/${ECS_SVC}"
+          MIN="${{ inputs.min_tasks }}"
+          MAX="${{ inputs.max_tasks }}"
+          echo "Setting auto-scaling: min=$MIN, max=$MAX"
+          aws application-autoscaling register-scalable-target \
+            --service-namespace ecs \
+            --resource-id "$RESOURCE" \
+            --scalable-dimension ecs:service:DesiredCount \
+            --min-capacity "$MIN" \
+            --max-capacity "$MAX"
+          aws application-autoscaling put-scaling-policy \
+            --service-namespace ecs \
+            --resource-id "$RESOURCE" \
+            --scalable-dimension ecs:service:DesiredCount \
+            --policy-name "${ECS_SVC}-cpu-scaling" \
+            --policy-type TargetTrackingScaling \
+            --target-tracking-scaling-policy-configuration '{
+              "TargetValue": 70.0,
+              "PredefinedMetricSpecification": {
+                "PredefinedMetricType": "ECSServiceAverageCPUUtilization"
+              },
+              "ScaleOutCooldown": 60,
+              "ScaleInCooldown": 120
+            }' > /dev/null
+
+      - name: Deployment summary
+        run: |
+          CPU_MEM="${{ inputs.cpu_memory }}"
+          if [ "$CPU_MEM" = "default" ]; then CPU_MEM="task definition default"; fi
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Service** | ${{ inputs.service }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Environment** | ${{ inputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image** | ${{ steps.build-image.outputs.image }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **CPU/Memory** | $CPU_MEM |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Auto-scale** | min=${{ inputs.min_tasks }}, max=${{ inputs.max_tasks }} |" >> $GITHUB_STEP_SUMMARY
