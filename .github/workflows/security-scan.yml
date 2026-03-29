@@ -1,0 +1,372 @@
+name: Security & Dependency Scan
+
+on:
+  # Run weekly on Monday at 7 AM EST (12:00 UTC)
+  schedule:
+    - cron: "0 12 * * 1"
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      severity:
+        description: "Minimum severity to report"
+        required: false
+        type: choice
+        default: "medium"
+        options:
+          - critical
+          - high
+          - medium
+          - low
+      create_issues:
+        description: "Create GitHub issues for critical/high findings"
+        required: false
+        type: boolean
+        default: true
+
+env:
+  ORG: illuma-ai
+  REPOS: "chat,m365-mcp,rag-api,code-executor,memory,agents"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # 1. Scan all repos for Dependabot alerts via GitHub API
+  # ─────────────────────────────────────────────────────────────
+  dependabot-scan:
+    name: Dependabot Alert Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      total_alerts: ${{ steps.scan.outputs.total_alerts }}
+      critical_count: ${{ steps.scan.outputs.critical_count }}
+      high_count: ${{ steps.scan.outputs.high_count }}
+      report: ${{ steps.scan.outputs.report_file }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan Dependabot alerts across all repos
+        id: scan
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_PAT }}
+          MIN_SEVERITY: ${{ inputs.severity || 'medium' }}
+        run: |
+          mkdir -p reports
+
+          TOTAL=0
+          CRITICAL=0
+          HIGH=0
+          MEDIUM=0
+          LOW=0
+
+          # JSON report
+          echo '{"scan_date":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","repositories":{' > reports/dependabot-report.json
+          FIRST_REPO=true
+
+          IFS=',' read -ra REPO_LIST <<< "$REPOS"
+          for repo in "${REPO_LIST[@]}"; do
+            echo "━━━ Scanning ${ORG}/${repo} ━━━"
+
+            # Fetch all open alerts
+            alerts=$(curl -s \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${ORG}/${repo}/dependabot/alerts?state=open&per_page=100")
+
+            # Parse alerts
+            stats=$(echo "$alerts" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          if not isinstance(data, list):
+              print('0|0|0|0|0|[]')
+              sys.exit()
+          by_sev = {'critical':0,'high':0,'medium':0,'low':0}
+          details = []
+          for a in data:
+              sev = a.get('security_advisory',{}).get('severity','unknown')
+              if sev in by_sev:
+                  by_sev[sev] += 1
+              pkg = a.get('security_vulnerability',{}).get('package',{})
+              fixed = a.get('security_vulnerability',{}).get('first_patched_version')
+              details.append({
+                  'number': a.get('number'),
+                  'severity': sev,
+                  'package': pkg.get('name','?'),
+                  'ecosystem': pkg.get('ecosystem','?'),
+                  'vulnerable_range': a.get('security_vulnerability',{}).get('vulnerable_version_range','?'),
+                  'fixed_version': fixed.get('identifier') if fixed else None,
+                  'summary': a.get('security_advisory',{}).get('summary','')[:120],
+                  'url': a.get('html_url','')
+              })
+          total = len(data)
+          print(f'{total}|{by_sev[\"critical\"]}|{by_sev[\"high\"]}|{by_sev[\"medium\"]}|{by_sev[\"low\"]}|{json.dumps(details)}')
+          " 2>/dev/null || echo "0|0|0|0|0|[]")
+
+            IFS='|' read -r repo_total repo_crit repo_high repo_med repo_low repo_details <<< "$stats"
+
+            echo "  Total: $repo_total (critical: $repo_crit, high: $repo_high, medium: $repo_med, low: $repo_low)"
+
+            TOTAL=$((TOTAL + repo_total))
+            CRITICAL=$((CRITICAL + repo_crit))
+            HIGH=$((HIGH + repo_high))
+            MEDIUM=$((MEDIUM + repo_med))
+            LOW=$((LOW + repo_low))
+
+            # Append to JSON report
+            if [ "$FIRST_REPO" = true ]; then
+              FIRST_REPO=false
+            else
+              echo ',' >> reports/dependabot-report.json
+            fi
+            echo "\"${repo}\":{\"total\":${repo_total},\"critical\":${repo_crit},\"high\":${repo_high},\"medium\":${repo_med},\"low\":${repo_low},\"alerts\":${repo_details}}" >> reports/dependabot-report.json
+          done
+
+          echo '},"summary":{"total":'$TOTAL',"critical":'$CRITICAL',"high":'$HIGH',"medium":'$MEDIUM',"low":'$LOW'}}' >> reports/dependabot-report.json
+
+          echo "total_alerts=$TOTAL" >> "$GITHUB_OUTPUT"
+          echo "critical_count=$CRITICAL" >> "$GITHUB_OUTPUT"
+          echo "high_count=$HIGH" >> "$GITHUB_OUTPUT"
+          echo "report_file=reports/dependabot-report.json" >> "$GITHUB_OUTPUT"
+
+          echo ""
+          echo "═══════════════════════════════════════════"
+          echo "  TOTAL: $TOTAL alerts"
+          echo "  Critical: $CRITICAL | High: $HIGH | Medium: $MEDIUM | Low: $LOW"
+          echo "═══════════════════════════════════════════"
+
+      - name: Upload scan report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependabot-report-${{ github.run_number }}
+          path: reports/
+          retention-days: 90
+
+  # ─────────────────────────────────────────────────────────────
+  # 2. Run npm audit on JS/TS repos
+  # ─────────────────────────────────────────────────────────────
+  npm-audit:
+    name: npm audit - ${{ matrix.repo }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repo: chat
+            path: "."
+          - repo: m365-mcp
+            path: "."
+          - repo: code-executor
+            path: "."
+          - repo: agents
+            path: "."
+    steps:
+      - name: Clone repo
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_PAT }}
+        run: |
+          git clone --depth 1 "https://${GH_TOKEN}@github.com/${ORG}/${{ matrix.repo }}.git" repo
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run npm audit
+        id: audit
+        working-directory: repo/${{ matrix.path }}
+        continue-on-error: true
+        run: |
+          npm audit --json > audit-report.json 2>/dev/null || true
+
+          python3 -c "
+          import json
+          with open('audit-report.json') as f:
+              data = json.load(f)
+          meta = data.get('metadata',{}).get('vulnerabilities',{})
+          print('## npm audit: ${{ matrix.repo }}')
+          print(f'| Severity | Count |')
+          print(f'|----------|-------|')
+          for sev in ['critical','high','moderate','low','info']:
+              count = meta.get(sev, 0)
+              if count > 0:
+                  print(f'| {sev} | {count} |')
+          total = meta.get('total', 0)
+          print(f'| **Total** | **{total}** |')
+          " 2>/dev/null >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload npm audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-${{ matrix.repo }}-${{ github.run_number }}
+          path: repo/${{ matrix.path }}/audit-report.json
+          retention-days: 90
+
+  # ─────────────────────────────────────────────────────────────
+  # 3. Run pip-audit on Python repos
+  # ─────────────────────────────────────────────────────────────
+  pip-audit:
+    name: pip-audit - ${{ matrix.repo }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repo: rag-api
+          - repo: code-executor
+          - repo: memory
+    steps:
+      - name: Clone repo
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_PAT }}
+        run: |
+          git clone --depth 1 "https://${GH_TOKEN}@github.com/${ORG}/${{ matrix.repo }}.git" repo
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run pip-audit
+        working-directory: repo
+        continue-on-error: true
+        run: |
+          pip install pip-audit 2>/dev/null
+          pip-audit -r requirements.txt --format json --output audit-report.json 2>/dev/null || true
+
+          python3 -c "
+          import json
+          try:
+              with open('audit-report.json') as f:
+                  data = json.load(f)
+              vulns = data if isinstance(data, list) else data.get('dependencies', [])
+              vuln_list = [d for d in vulns if d.get('vulns')]
+              print('## pip-audit: ${{ matrix.repo }}')
+              print(f'Vulnerable packages: {len(vuln_list)}')
+              for d in vuln_list:
+                  name = d.get('name','?')
+                  ver = d.get('version','?')
+                  for v in d.get('vulns',[]):
+                      fix = v.get('fix_versions',['no fix'])
+                      print(f'- **{name}** {ver}: {v.get(\"id\",\"?\")} (fix: {\", \".join(fix) if fix else \"none\"})')
+          except:
+              print('## pip-audit: ${{ matrix.repo }}')
+              print('Scan completed - check artifact for details')
+          " >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload pip-audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-${{ matrix.repo }}-${{ github.run_number }}
+          path: repo/audit-report.json
+          retention-days: 90
+
+  # ─────────────────────────────────────────────────────────────
+  # 4. Create summary issue for critical/high findings
+  # ─────────────────────────────────────────────────────────────
+  report:
+    name: Generate Report
+    runs-on: ubuntu-latest
+    needs: [dependabot-scan, npm-audit, pip-audit]
+    if: always()
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Download Dependabot report
+        uses: actions/download-artifact@v4
+        with:
+          name: dependabot-report-${{ github.run_number }}
+          path: reports/
+
+      - name: Generate summary
+        env:
+          TOTAL: ${{ needs.dependabot-scan.outputs.total_alerts }}
+          CRITICAL: ${{ needs.dependabot-scan.outputs.critical_count }}
+          HIGH: ${{ needs.dependabot-scan.outputs.high_count }}
+        run: |
+          echo "# 🔒 Illuma Platform Security Scan Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Date:** $(date -u +%Y-%m-%d)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Dependabot Alerts Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Metric | Count |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Total Open | ${TOTAL} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Critical | ${CRITICAL} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| High | ${HIGH} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          python3 -c "
+          import json
+          with open('reports/dependabot-report.json') as f:
+              data = json.load(f)
+          repos = data.get('repositories',{})
+          print('## Per-Repository Breakdown')
+          print('| Repository | Critical | High | Medium | Low | Total |')
+          print('|------------|----------|------|--------|-----|-------|')
+          for repo, info in repos.items():
+              print(f'| {repo} | {info[\"critical\"]} | {info[\"high\"]} | {info[\"medium\"]} | {info[\"low\"]} | {info[\"total\"]} |')
+          print()
+          print('## Critical & High Alerts (Action Required)')
+          for repo, info in repos.items():
+              critical_high = [a for a in info.get('alerts',[]) if a['severity'] in ('critical','high')]
+              if critical_high:
+                  print(f'### {repo}')
+                  for a in critical_high:
+                      fix = f' → fix: **{a[\"fixed_version\"]}**' if a.get('fixed_version') else ' (no fix available)'
+                      print(f'- [{a[\"severity\"].upper()}] **{a[\"package\"]}** ({a[\"ecosystem\"]}) {a[\"vulnerable_range\"]}{fix}')
+                      print(f'  {a[\"summary\"]}')
+                  print()
+          " 2>/dev/null >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create/update tracking issue
+        if: (inputs.create_issues == true || inputs.create_issues == '') && (needs.dependabot-scan.outputs.critical_count != '0' || needs.dependabot-scan.outputs.high_count != '0')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CRITICAL: ${{ needs.dependabot-scan.outputs.critical_count }}
+          HIGH: ${{ needs.dependabot-scan.outputs.high_count }}
+          TOTAL: ${{ needs.dependabot-scan.outputs.total_alerts }}
+        run: |
+          SCAN_DATE=$(date -u +%Y-%m-%d)
+
+          # Build issue body from report
+          BODY=$(python3 -c "
+          import json
+          with open('reports/dependabot-report.json') as f:
+              data = json.load(f)
+          repos = data.get('repositories',{})
+          print('## Security Scan Results — ${SCAN_DATE}')
+          print()
+          print('| Repository | Critical | High | Medium | Low | Total |')
+          print('|------------|----------|------|--------|-----|-------|')
+          for repo, info in repos.items():
+              print(f'| {repo} | {info[\"critical\"]} | {info[\"high\"]} | {info[\"medium\"]} | {info[\"low\"]} | {info[\"total\"]} |')
+          print()
+          print('### Action Required')
+          for repo, info in repos.items():
+              critical_high = [a for a in info.get('alerts',[]) if a['severity'] in ('critical','high')]
+              if critical_high:
+                  print(f'#### {repo}')
+                  for a in critical_high:
+                      fix = f' → upgrade to **{a[\"fixed_version\"]}**' if a.get('fixed_version') else ''
+                      checked = '[ ]'
+                      print(f'- {checked} [{a[\"severity\"].upper()}] **{a[\"package\"]}** {a[\"vulnerable_range\"]}{fix}')
+                  print()
+          print('---')
+          print('*Auto-generated by [Security Scan](https://github.com/illuma-ai/deployment/actions/workflows/security-scan.yml)*')
+          " 2>/dev/null)
+
+          # Check for existing open issue
+          EXISTING=$(gh issue list --repo illuma-ai/deployment --label "security" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --repo illuma-ai/deployment --body "$BODY"
+            echo "Updated existing issue #$EXISTING"
+          else
+            gh issue create --repo illuma-ai/deployment \
+              --title "Security Scan: ${CRITICAL} critical, ${HIGH} high alerts (${SCAN_DATE})" \
+              --body "$BODY" \
+              --label "security"
+            echo "Created new tracking issue"
+          fi
