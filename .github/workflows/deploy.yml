@@ -15,6 +15,9 @@ on:
           - m365-mcp
           - nexillo-mcp
           - mongodb
+          - observe
+          - clickhouse
+          - builder
           - redis
           - postgres
       environment:
@@ -68,6 +71,8 @@ on:
       - deploy-m365-mcp
       - deploy-nexillo-mcp
       - deploy-mongodb
+      - deploy-observe
+      - deploy-builder
 
 permissions:
   id-token: write
@@ -108,7 +113,7 @@ jobs:
             echo "min_tasks=1" >> $GITHUB_OUTPUT
             echo "max_tasks=2" >> $GITHUB_OUTPUT
             echo "is_managed=false" >> $GITHUB_OUTPUT
-            if [ "$SERVICE" = "mongodb" ]; then
+            if [ "$SERVICE" = "mongodb" ] || [ "$SERVICE" = "clickhouse" ]; then
               echo "is_ecs_only=true" >> $GITHUB_OUTPUT
             else
               echo "is_ecs_only=false" >> $GITHUB_OUTPUT
@@ -125,7 +130,7 @@ jobs:
             if [ "$SVC" = "redis" ] || [ "$SVC" = "postgres" ]; then
               echo "is_managed=true" >> $GITHUB_OUTPUT
               echo "is_ecs_only=false" >> $GITHUB_OUTPUT
-            elif [ "$SVC" = "mongodb" ]; then
+            elif [ "$SVC" = "mongodb" ] || [ "$SVC" = "clickhouse" ]; then
               echo "is_managed=false" >> $GITHUB_OUTPUT
               echo "is_ecs_only=true" >> $GITHUB_OUTPUT
             else

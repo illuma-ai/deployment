@@ -1,0 +1,95 @@
+{
+  "family": "illuma-ai-builder-td-dev",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-dev",
+  "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-dev",
+  "containerDefinitions": [
+    {
+      "name": "illuma-ai-builder",
+      "image": "423159469683.dkr.ecr.us-east-1.amazonaws.com/illuma-ai-builder-dev:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3001,
+          "hostPort": 3001,
+          "protocol": "tcp"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/builder-iPQpKc:DATABASE_URL::"
+        },
+        {
+          "name": "BETTER_AUTH_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/builder-iPQpKc:BETTER_AUTH_SECRET::"
+        },
+        {
+          "name": "ENCRYPTION_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/builder-iPQpKc:ENCRYPTION_KEY::"
+        },
+        {
+          "name": "INTERNAL_API_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/builder-iPQpKc:INTERNAL_API_SECRET::"
+        },
+        {
+          "name": "API_ENCRYPTION_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/builder-iPQpKc:API_ENCRYPTION_KEY::"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/builder-iPQpKc:OPENAI_API_KEY::"
+        },
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/builder-iPQpKc:ANTHROPIC_API_KEY::"
+        },
+        {
+          "name": "CORS_ORIGIN",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/builder-iPQpKc:CORS_ORIGIN::"
+        },
+        {
+          "name": "NEXT_PUBLIC_APP_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/builder-iPQpKc:NEXT_PUBLIC_APP_URL::"
+        },
+        {
+          "name": "DISABLE_AUTH",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/builder-iPQpKc:DISABLE_AUTH::"
+        }
+      ],
+      "environment": [
+        {
+          "name": "PORT",
+          "value": "3001"
+        },
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/illuma-ai-builder-dev",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:3001/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 5,
+        "startPeriod": 120
+      }
+    }
+  ]
+}
