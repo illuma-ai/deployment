@@ -239,9 +239,14 @@ jobs:
         run: |
           SERVICE="${{ needs.resolve.outputs.service }}"
           REF="${{ needs.resolve.outputs.ref }}"
-          echo "Cloning illuma-ai/$SERVICE (branch: $REF)..."
+          # Map service name to repo name (when they differ)
+          case "$SERVICE" in
+            observe) REPO="observability" ;;
+            *)       REPO="$SERVICE" ;;
+          esac
+          echo "Cloning illuma-ai/$REPO (branch: $REF)..."
           git clone --depth 1 --branch "$REF" \
-            "https://x-access-token:${{ secrets.PRIVATE_REPO_PAT }}@github.com/illuma-ai/$SERVICE.git" \
+            "https://x-access-token:${{ secrets.PRIVATE_REPO_PAT }}@github.com/illuma-ai/$REPO.git" \
             ./source
           ls -la ./source
 
