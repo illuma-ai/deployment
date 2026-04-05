@@ -196,6 +196,26 @@
         {
           "name": "DD_LLMOBS_ENABLED",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:DD_LLMOBS_ENABLED::"
+        },
+        {
+          "name": "ILLUMA_PUBLIC_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ILLUMA_PUBLIC_KEY::"
+        },
+        {
+          "name": "ILLUMA_SECRET_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ILLUMA_SECRET_KEY::"
+        },
+        {
+          "name": "ILLUMA_BASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:ILLUMA_BASE_URL::"
+        },
+        {
+          "name": "MS365_AUTHORIZATION_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MS365_AUTHORIZATION_URL::"
+        },
+        {
+          "name": "MS365_TOKEN_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-HcimnA:MS365_TOKEN_URL::"
         }
       ],
       "logConfiguration": {
