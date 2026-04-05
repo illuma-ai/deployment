@@ -58,6 +58,10 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AWS_SECRET_ACCESS_KEY::"
         },
         {
+          "name": "AWS_REGION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AWS_REGION::"
+        },
+        {
           "name": "DOMAIN_CLIENT",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:DOMAIN_CLIENT::"
         },
@@ -68,6 +72,42 @@
         {
           "name": "CORS_ORIGINS",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:CORS_ORIGINS::"
+        },
+        {
+          "name": "ALLOW_REGISTRATION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:ALLOW_REGISTRATION::"
+        },
+        {
+          "name": "ALLOW_SOCIAL_REGISTRATION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:ALLOW_SOCIAL_REGISTRATION::"
+        },
+        {
+          "name": "AUTH_DISABLE_SIGNUP",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AUTH_DISABLE_SIGNUP::"
+        },
+        {
+          "name": "AUTH_MODE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AUTH_MODE::"
+        },
+        {
+          "name": "PORT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:PORT::"
+        },
+        {
+          "name": "NODE_ENV",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:NODE_ENV::"
+        },
+        {
+          "name": "LLM_PROVIDER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:LLM_PROVIDER::"
+        },
+        {
+          "name": "AWS_BEDROCK_MODEL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AWS_BEDROCK_MODEL::"
+        },
+        {
+          "name": "MODEL_MATCH_CACHE_ENABLED",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:MODEL_MATCH_CACHE_ENABLED::"
         }
       ],
       "logConfiguration": {
