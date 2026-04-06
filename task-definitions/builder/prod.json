@@ -42,12 +42,16 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/builder-E2uiCm:API_ENCRYPTION_KEY::"
         },
         {
-          "name": "OPENAI_API_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/builder-E2uiCm:OPENAI_API_KEY::"
+          "name": "BEDROCK_AWS_DEFAULT_REGION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/builder-E2uiCm:BEDROCK_AWS_DEFAULT_REGION::"
         },
         {
-          "name": "ANTHROPIC_API_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/builder-E2uiCm:ANTHROPIC_API_KEY::"
+          "name": "BEDROCK_AWS_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/builder-E2uiCm:BEDROCK_AWS_ACCESS_KEY_ID::"
+        },
+        {
+          "name": "BEDROCK_AWS_SECRET_ACCESS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/builder-E2uiCm:BEDROCK_AWS_SECRET_ACCESS_KEY::"
         },
         {
           "name": "CORS_ORIGIN",
@@ -60,6 +64,10 @@
         {
           "name": "DISABLE_AUTH",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/builder-E2uiCm:DISABLE_AUTH::"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/builder-E2uiCm:OPENAI_API_KEY::"
         }
       ],
       "environment": [
