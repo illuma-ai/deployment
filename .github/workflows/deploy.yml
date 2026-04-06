@@ -62,17 +62,7 @@ on:
           - '2'
           - '3'
 
-  repository_dispatch:
-    types:
-      - deploy-chat
-      - deploy-rag-api
-      - deploy-code-executor
-      - deploy-memory
-      - deploy-m365-mcp
-      - deploy-nexillo-mcp
-      - deploy-mongodb
-      - deploy-observe
-      - deploy-builder
+  # repository_dispatch removed — all deployments are manual-only via workflow_dispatch
 
 permissions:
   id-token: write
@@ -99,44 +89,24 @@ jobs:
       - name: Resolve inputs
         id: resolve
         run: |
-          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            EVENT_TYPE="${{ github.event.action }}"
-            SERVICE="${EVENT_TYPE#deploy-}"
-            BRANCH="${{ github.event.client_payload.branch }}"
-            SHA="${{ github.event.client_payload.sha }}"
-            if [ "$BRANCH" = "main" ]; then ENV="prod"; else ENV="dev"; fi
-            echo "service=$SERVICE" >> $GITHUB_OUTPUT
-            echo "environment=$ENV" >> $GITHUB_OUTPUT
-            echo "ref=$BRANCH" >> $GITHUB_OUTPUT
-            echo "sha=$SHA" >> $GITHUB_OUTPUT
-            echo "cpu_memory=default" >> $GITHUB_OUTPUT
-            echo "min_tasks=1" >> $GITHUB_OUTPUT
-            echo "max_tasks=2" >> $GITHUB_OUTPUT
+          # Manual workflow_dispatch only
+          SVC="${{ inputs.service }}"
+          echo "service=$SVC" >> $GITHUB_OUTPUT
+          echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+          echo "ref=${{ inputs.ref || 'main' }}" >> $GITHUB_OUTPUT
+          echo "sha=" >> $GITHUB_OUTPUT
+          echo "cpu_memory=${{ inputs.cpu_memory || 'default' }}" >> $GITHUB_OUTPUT
+          echo "min_tasks=${{ inputs.min_tasks || '1' }}" >> $GITHUB_OUTPUT
+          echo "max_tasks=${{ inputs.max_tasks || '2' }}" >> $GITHUB_OUTPUT
+          if [ "$SVC" = "redis" ] || [ "$SVC" = "postgres" ]; then
+            echo "is_managed=true" >> $GITHUB_OUTPUT
+            echo "is_ecs_only=false" >> $GITHUB_OUTPUT
+          elif [ "$SVC" = "mongodb" ] || [ "$SVC" = "clickhouse" ]; then
             echo "is_managed=false" >> $GITHUB_OUTPUT
-            if [ "$SERVICE" = "mongodb" ] || [ "$SERVICE" = "clickhouse" ]; then
-              echo "is_ecs_only=true" >> $GITHUB_OUTPUT
-            else
-              echo "is_ecs_only=false" >> $GITHUB_OUTPUT
-            fi
+            echo "is_ecs_only=true" >> $GITHUB_OUTPUT
           else
-            SVC="${{ inputs.service }}"
-            echo "service=$SVC" >> $GITHUB_OUTPUT
-            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
-            echo "ref=${{ inputs.ref || 'main' }}" >> $GITHUB_OUTPUT
-            echo "sha=" >> $GITHUB_OUTPUT
-            echo "cpu_memory=${{ inputs.cpu_memory || 'default' }}" >> $GITHUB_OUTPUT
-            echo "min_tasks=${{ inputs.min_tasks || '1' }}" >> $GITHUB_OUTPUT
-            echo "max_tasks=${{ inputs.max_tasks || '2' }}" >> $GITHUB_OUTPUT
-            if [ "$SVC" = "redis" ] || [ "$SVC" = "postgres" ]; then
-              echo "is_managed=true" >> $GITHUB_OUTPUT
-              echo "is_ecs_only=false" >> $GITHUB_OUTPUT
-            elif [ "$SVC" = "mongodb" ] || [ "$SVC" = "clickhouse" ]; then
-              echo "is_managed=false" >> $GITHUB_OUTPUT
-              echo "is_ecs_only=true" >> $GITHUB_OUTPUT
-            else
-              echo "is_managed=false" >> $GITHUB_OUTPUT
-              echo "is_ecs_only=false" >> $GITHUB_OUTPUT
-            fi
+            echo "is_managed=false" >> $GITHUB_OUTPUT
+            echo "is_ecs_only=false" >> $GITHUB_OUTPUT
           fi
 
   managed:
