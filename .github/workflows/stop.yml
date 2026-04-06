@@ -15,6 +15,9 @@ on:
           - m365-mcp
           - nexillo-mcp
           - mongodb
+          - observe
+          - clickhouse
+          - builder
           - redis
           - postgres
       environment:
