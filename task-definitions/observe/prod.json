@@ -4,8 +4,8 @@
   "requiresCompatibilities": [
     "FARGATE"
   ],
-  "cpu": "1024",
-  "memory": "2048",
+  "cpu": "256",
+  "memory": "512",
   "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-prod",
   "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-prod",
   "containerDefinitions": [
@@ -38,6 +38,14 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:REDIS_URI::"
         },
         {
+          "name": "PORT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:PORT::"
+        },
+        {
+          "name": "NODE_ENV",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:NODE_ENV::"
+        },
+        {
           "name": "JWT_SECRET",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:JWT_SECRET::"
         },
@@ -46,20 +54,8 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:JWT_REFRESH_SECRET::"
         },
         {
-          "name": "ENCRYPTION_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:ENCRYPTION_KEY::"
-        },
-        {
-          "name": "AWS_ACCESS_KEY_ID",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AWS_ACCESS_KEY_ID::"
-        },
-        {
-          "name": "AWS_SECRET_ACCESS_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AWS_SECRET_ACCESS_KEY::"
-        },
-        {
-          "name": "AWS_REGION",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AWS_REGION::"
+          "name": "CORS_ORIGINS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:CORS_ORIGINS::"
         },
         {
           "name": "DOMAIN_CLIENT",
@@ -70,8 +66,8 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:DOMAIN_SERVER::"
         },
         {
-          "name": "CORS_ORIGINS",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:CORS_ORIGINS::"
+          "name": "AUTH_MODE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AUTH_MODE::"
         },
         {
           "name": "ALLOW_REGISTRATION",
@@ -82,28 +78,28 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:ALLOW_SOCIAL_REGISTRATION::"
         },
         {
-          "name": "AUTH_DISABLE_SIGNUP",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AUTH_DISABLE_SIGNUP::"
-        },
-        {
-          "name": "AUTH_MODE",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AUTH_MODE::"
-        },
-        {
-          "name": "PORT",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:PORT::"
-        },
-        {
-          "name": "NODE_ENV",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:NODE_ENV::"
-        },
-        {
           "name": "LLM_PROVIDER",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:LLM_PROVIDER::"
         },
         {
+          "name": "AWS_REGION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AWS_REGION::"
+        },
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AWS_ACCESS_KEY_ID::"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AWS_SECRET_ACCESS_KEY::"
+        },
+        {
           "name": "AWS_BEDROCK_MODEL",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:AWS_BEDROCK_MODEL::"
+        },
+        {
+          "name": "ENCRYPTION_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/observe-xwH3yu:ENCRYPTION_KEY::"
         },
         {
           "name": "MODEL_MATCH_CACHE_ENABLED",

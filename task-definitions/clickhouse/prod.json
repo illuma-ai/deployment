@@ -1,5 +1,5 @@
 {
-  "family": "illuma-ai-mongodb-td-prod",
+  "family": "illuma-ai-clickhouse-td-prod",
   "networkMode": "awsvpc",
   "requiresCompatibilities": [
     "FARGATE"
@@ -10,27 +10,46 @@
   "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-prod",
   "containerDefinitions": [
     {
-      "name": "illuma-ai-mongodb",
-      "image": "mongo:7.0",
+      "name": "illuma-ai-clickhouse",
+      "image": "423159469683.dkr.ecr.us-east-1.amazonaws.com/illuma-ai-clickhouse-prod:24.3",
       "essential": true,
       "portMappings": [
         {
-          "containerPort": 27017,
-          "hostPort": 27017,
+          "containerPort": 8123,
+          "hostPort": 8123,
           "protocol": "tcp"
+        },
+        {
+          "containerPort": 9000,
+          "hostPort": 9000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "CLICKHOUSE_USER",
+          "value": "default"
+        },
+        {
+          "name": "CLICKHOUSE_PASSWORD",
+          "value": "clickhouse"
+        },
+        {
+          "name": "CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT",
+          "value": "1"
         }
       ],
       "mountPoints": [
         {
-          "sourceVolume": "mongodb-data",
-          "containerPath": "/data/db",
+          "sourceVolume": "clickhouse-data",
+          "containerPath": "/var/lib/clickhouse",
           "readOnly": false
         }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/illuma-ai-mongodb-prod",
+          "awslogs-group": "/ecs/illuma-ai-clickhouse-prod",
           "awslogs-region": "us-east-1",
           "awslogs-stream-prefix": "ecs"
         }
@@ -38,7 +57,7 @@
       "healthCheck": {
         "command": [
           "CMD-SHELL",
-          "mongosh --eval 'db.runCommand({ping:1}).ok' --quiet || exit 1"
+          "wget -q --spider http://localhost:8123/ping || exit 1"
         ],
         "interval": 30,
         "timeout": 10,
@@ -49,13 +68,13 @@
   ],
   "volumes": [
     {
-      "name": "mongodb-data",
+      "name": "clickhouse-data",
       "efsVolumeConfiguration": {
-        "fileSystemId": "fs-0436edf2469e8d003",
+        "fileSystemId": "fs-0391a3da6b2601a5a",
         "rootDirectory": "/",
         "transitEncryption": "ENABLED",
         "authorizationConfig": {
-          "accessPointId": "fsap-0cc5c1c02703334e5",
+          "accessPointId": "fsap-0aecaf06757315d72",
           "iam": "DISABLED"
         }
       }
