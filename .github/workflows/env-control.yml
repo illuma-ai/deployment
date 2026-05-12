@@ -32,8 +32,6 @@ on:
           - '2'
           - '3'
 
-  schedule:
-    - cron: '0 13 * * *'   # Auto-start dev at 8 AM EST daily
 
 permissions:
   id-token: write
