@@ -1,0 +1,79 @@
+name: illuma-memory GPU (dev test box)
+
+# Lifecycle control for the illuma-memory GPU dev test instance (single g6.xlarge
+# running the docker-compose stack: memory + postgres/pgvector + neo4j on a
+# dedicated NVIDIA L4). This is the cost kill-switch — STOP terminates GPU
+# billing (only the EBS volume + Elastic IP remain, a few $/month). The Elastic
+# IP and the seeded model-cache volume persist across stop/start, so START brings
+# the same endpoint back warm in ~2-3 min (containers auto-restart on boot).
+#
+#   START    -> ec2 start-instances  (endpoint live again)
+#   STOP     -> ec2 stop-instances    (GPU cost -> $0)
+#   STATUS   -> instance state + /health
+#   REDEPLOY -> git pull + compose up -d --build (pick up new code)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action'
+        required: true
+        type: choice
+        options: [start, stop, status, redeploy]
+  schedule:
+    - cron: '0 4 * * *'   # nightly auto-stop (11 PM EST) — cost safety net
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  INSTANCE_ID: i-024d902670f9dd4b7
+  ELASTIC_IP: 3.230.194.197
+  PORT: '8002'
+
+jobs:
+  control:
+    name: "illuma-memory-gpu: ${{ inputs.action || 'stop (scheduled)' }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run action
+        run: |
+          ACTION="${{ inputs.action || 'stop' }}"
+          IID="${{ env.INSTANCE_ID }}"
+          EIP="${{ env.ELASTIC_IP }}"
+          echo "## illuma-memory GPU — $ACTION" >> $GITHUB_STEP_SUMMARY
+
+          case "$ACTION" in
+            stop)
+              aws ec2 stop-instances --instance-ids "$IID" --no-cli-pager >/dev/null
+              echo "- Instance **stopping** — GPU billing -> \$0 (EBS + EIP persist)" >> $GITHUB_STEP_SUMMARY
+              ;;
+            start)
+              aws ec2 start-instances --instance-ids "$IID" --no-cli-pager >/dev/null
+              aws ec2 wait instance-running --instance-ids "$IID"
+              echo "- Instance **started** — endpoint warming up (~2-3 min)" >> $GITHUB_STEP_SUMMARY
+              echo "- Endpoint: http://$EIP:${{ env.PORT }}" >> $GITHUB_STEP_SUMMARY
+              ;;
+            status)
+              STATE=$(aws ec2 describe-instances --instance-ids "$IID" --query 'Reservations[0].Instances[0].State.Name' --output text)
+              echo "- Instance state: **$STATE**" >> $GITHUB_STEP_SUMMARY
+              if [ "$STATE" = "running" ]; then
+                HEALTH=$(curl -fsS --max-time 5 "http://$EIP:${{ env.PORT }}/health" || echo "not-ready")
+                echo "- /health: \`$HEALTH\`" >> $GITHUB_STEP_SUMMARY
+              fi
+              ;;
+            redeploy)
+              CID=$(aws ssm send-command --instance-ids "$IID" --document-name AWS-RunShellScript \
+                --parameters 'commands=["cd /opt/illuma-memory","git pull","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build"]' \
+                --timeout-seconds 2400 --query 'Command.CommandId' --output text)
+              echo "- Redeploy dispatched via SSM (command $CID)" >> $GITHUB_STEP_SUMMARY
+              ;;
+          esac
