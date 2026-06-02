@@ -57,9 +57,19 @@ jobs:
               echo "- Instance **stopping** — GPU billing -> \$0 (EBS + EIP persist)" >> $GITHUB_STEP_SUMMARY
               ;;
             start)
-              aws ec2 start-instances --instance-ids "$IID" --no-cli-pager >/dev/null
+              # GPU (L4) capacity in a single AZ can be transiently unavailable —
+              # retry on InsufficientInstanceCapacity (usually frees within minutes).
+              ok=""
+              for try in 1 2 3 4 5 6 7 8; do
+                if aws ec2 start-instances --instance-ids "$IID" --no-cli-pager 2>/tmp/e >/dev/null; then ok=1; break; fi
+                echo "  start attempt $try: $(tail -1 /tmp/e | head -c 100); retrying..."; sleep 45
+              done
+              if [ -z "$ok" ]; then
+                echo "- ❌ Could not start — no GPU capacity in the AZ after retries. Try again shortly." >> $GITHUB_STEP_SUMMARY
+                exit 1
+              fi
               aws ec2 wait instance-running --instance-ids "$IID"
-              echo "- Instance **started** — endpoint warming up (~2-3 min)" >> $GITHUB_STEP_SUMMARY
+              echo "- Instance **started** — endpoint warming up (~1-3 min, models load from cache)" >> $GITHUB_STEP_SUMMARY
               echo "- Endpoint: http://$EIP:${{ env.PORT }}" >> $GITHUB_STEP_SUMMARY
               ;;
             status)
