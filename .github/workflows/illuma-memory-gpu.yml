@@ -82,8 +82,8 @@ jobs:
               ;;
             redeploy)
               CID=$(aws ssm send-command --instance-ids "$IID" --document-name AWS-RunShellScript \
-                --parameters 'commands=["cd /opt/illuma-memory","git pull","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build"]' \
+                --parameters 'commands=["cd /opt/illuma-memory","git fetch origin","git reset --hard origin/hardening/enterprise","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build"]' \
                 --timeout-seconds 2400 --query 'Command.CommandId' --output text)
-              echo "- Redeploy dispatched via SSM (command $CID)" >> $GITHUB_STEP_SUMMARY
+              echo "- Redeploy dispatched via SSM (command $CID) — git reset --hard origin/hardening/enterprise" >> $GITHUB_STEP_SUMMARY
               ;;
           esac
