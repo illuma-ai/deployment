@@ -10,7 +10,9 @@ name: illuma-memory GPU (dev test box)
 #   START    -> ec2 start-instances  (endpoint live again)
 #   STOP     -> ec2 stop-instances    (GPU cost -> $0)
 #   STATUS   -> instance state + /health
-#   REDEPLOY -> git pull + compose up -d --build (pick up new code)
+#   REDEPLOY -> git reset --hard + prune + compose up -d --build --force-recreate
+#               (--force-recreate is required: app code is COPY-baked into the image,
+#                so plain `up --build` keeps the old container running stale code)
 
 on:
   workflow_dispatch:
@@ -20,6 +22,11 @@ on:
         required: true
         type: choice
         options: [start, stop, status, redeploy]
+      branch:
+        description: 'Branch to deploy (redeploy only)'
+        required: false
+        default: 'hardening/enterprise'
+        type: string
   schedule:
     - cron: '0 4 * * *'   # nightly auto-stop (11 PM EST) — cost safety net
 
@@ -81,9 +88,16 @@ jobs:
               fi
               ;;
             redeploy)
+              # NOTE: app code is COPY-baked into the image at build time (not bind-mounted), so
+              # `up -d --build` alone does NOT recreate the running container — it keeps the old
+              # image and serves stale code. `--force-recreate` is REQUIRED to roll the container
+              # to the new code. The prune step runs FIRST because repeated GPU rebuilds (torch CUDA
+              # layers are multi-GB) fill the disk; once full, new-image layer extraction fails with
+              # "no space left on device" and the old container silently keeps running.
               CID=$(aws ssm send-command --instance-ids "$IID" --document-name AWS-RunShellScript \
-                --parameters 'commands=["cd /opt/illuma-memory","git fetch origin","git reset --hard origin/hardening/enterprise","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build"]' \
+                --parameters 'commands=["cd /opt/illuma-memory","git fetch origin","git reset --hard origin/${{ inputs.branch || 'hardening/enterprise' }}","docker builder prune -af || true","docker image prune -af || true","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build --force-recreate"]' \
                 --timeout-seconds 2400 --query 'Command.CommandId' --output text)
-              echo "- Redeploy dispatched via SSM (command $CID) — git reset --hard origin/hardening/enterprise" >> $GITHUB_STEP_SUMMARY
+              echo "- Redeploy dispatched via SSM (command $CID) — git reset --hard origin/${{ inputs.branch || 'hardening/enterprise' }}, prune, up --build --force-recreate" >> $GITHUB_STEP_SUMMARY
+              echo "- ⚠️ SSM dispatch only — a green run means the command was SENT, not finished. Verify the live endpoint for the new behavior." >> $GITHUB_STEP_SUMMARY
               ;;
           esac
