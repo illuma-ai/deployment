@@ -10,9 +10,11 @@ name: illuma-memory GPU (dev test box)
 #   START    -> ec2 start-instances  (endpoint live again)
 #   STOP     -> ec2 stop-instances    (GPU cost -> $0)
 #   STATUS   -> instance state + /health
-#   REDEPLOY -> git reset --hard + prune + compose up -d --build --force-recreate
-#               (--force-recreate is required: app code is COPY-baked into the image,
-#                so plain `up --build` keeps the old container running stale code)
+#   REDEPLOY -> git reset --hard + prune + build + EXPLICIT force-recreate of the app
+#               service + on-box health gate; the workflow WAITS for the SSM command and
+#               FAILS on non-Success (app code is COPY-baked, so the container must be
+#               force-recreated onto the new image — a green run == deployed + healthy,
+#               not merely dispatched)
 
 on:
   workflow_dispatch:
@@ -88,16 +90,43 @@ jobs:
               fi
               ;;
             redeploy)
-              # NOTE: app code is COPY-baked into the image at build time (not bind-mounted), so
-              # `up -d --build` alone does NOT recreate the running container — it keeps the old
-              # image and serves stale code. `--force-recreate` is REQUIRED to roll the container
-              # to the new code. The prune step runs FIRST because repeated GPU rebuilds (torch CUDA
-              # layers are multi-GB) fill the disk; once full, new-image layer extraction fails with
-              # "no space left on device" and the old container silently keeps running.
+              # app code is COPY-baked into the image at build time (not bind-mounted). A bare
+              # `up -d --build --force-recreate` has proven UNRELIABLE at swapping the running
+              # container (build succeeds + tags a new image, but the old container keeps serving
+              # stale code — "green != deployed"). This does it verified + SYNCHRONOUS on the box:
+              #   1. git reset --hard to the branch tip
+              #   2. prune (repeated multi-GB CUDA rebuilds fill the disk; a full disk makes new
+              #      layer extraction fail with "no space left" and the old container keeps running)
+              #   3. build the new image
+              #   4. EXPLICITLY force-recreate ONLY the app service onto the new image (the belt-
+              #      and-suspenders swap the bare command misses)
+              #   5. health-gate on the box (curl localhost/health; `set -e` fails the command if
+              #      it never comes healthy)
+              # The workflow then WAITS for the SSM command to finish and FAILS the run on any
+              # non-Success status — so a green run means actually deployed + healthy, not merely
+              # dispatched.
+              BRANCH="${{ inputs.branch || 'hardening/enterprise' }}"
               CID=$(aws ssm send-command --instance-ids "$IID" --document-name AWS-RunShellScript \
-                --parameters 'commands=["cd /opt/illuma-memory","git fetch origin","git reset --hard origin/${{ inputs.branch || 'hardening/enterprise' }}","docker builder prune -af || true","docker image prune -af || true","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build --force-recreate"]' \
+                --parameters 'commands=["set -e","cd /opt/illuma-memory","git fetch origin","git reset --hard origin/${{ inputs.branch || 'hardening/enterprise' }}","docker builder prune -af || true","docker image prune -af || true","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --no-deps --force-recreate illuma-memory","for i in $(seq 1 40); do curl -fsS --max-time 5 http://localhost:${{ env.PORT }}/health >/dev/null && break || sleep 6; done","curl -fsS --max-time 5 http://localhost:${{ env.PORT }}/health","echo DEPLOYED_HEAD=$(git rev-parse --short HEAD)"]' \
                 --timeout-seconds 2400 --query 'Command.CommandId' --output text)
-              echo "- Redeploy dispatched via SSM (command $CID) — git reset --hard origin/${{ inputs.branch || 'hardening/enterprise' }}, prune, up --build --force-recreate" >> $GITHUB_STEP_SUMMARY
-              echo "- ⚠️ SSM dispatch only — a green run means the command was SENT, not finished. Verify the live endpoint for the new behavior." >> $GITHUB_STEP_SUMMARY
+              echo "- Redeploy SSM command \`$CID\` (branch \`$BRANCH\`) — building + force-recreating on the box, waiting for completion..." >> $GITHUB_STEP_SUMMARY
+              # Build can take 10-15 min; the built-in `command-executed` waiter is too short, so poll.
+              STATUS=Pending
+              for i in $(seq 1 130); do
+                STATUS=$(aws ssm get-command-invocation --command-id "$CID" --instance-id "$IID" --query Status --output text 2>/dev/null || echo Pending)
+                case "$STATUS" in Success|Failed|Cancelled|TimedOut) break ;; esac
+                sleep 20
+              done
+              OUT=$(aws ssm get-command-invocation --command-id "$CID" --instance-id "$IID" --query StandardOutputContent --output text 2>/dev/null || true)
+              ERR=$(aws ssm get-command-invocation --command-id "$CID" --instance-id "$IID" --query StandardErrorContent --output text 2>/dev/null || true)
+              echo "- SSM status: **$STATUS**" >> $GITHUB_STEP_SUMMARY
+              { echo '```'; echo "$OUT" | tail -25; echo '```'; } >> $GITHUB_STEP_SUMMARY
+              if [ "$STATUS" != "Success" ]; then
+                echo "- ❌ Redeploy did NOT complete healthy (status $STATUS) — the old container may still be serving. See output/stderr above." >> $GITHUB_STEP_SUMMARY
+                echo "::error::redeploy failed with SSM status $STATUS"
+                echo "$ERR" | tail -25
+                exit 1
+              fi
+              echo "- ✅ Redeployed: container force-recreated onto the new image and /health OK. Endpoint: http://$EIP:${{ env.PORT }}" >> $GITHUB_STEP_SUMMARY
               ;;
           esac
