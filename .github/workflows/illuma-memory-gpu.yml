@@ -27,7 +27,7 @@ on:
       branch:
         description: 'Branch to deploy (redeploy only)'
         required: false
-        default: 'hardening/enterprise'
+        default: 'develop'
         type: string
   schedule:
     - cron: '0 4 * * *'   # nightly auto-stop (11 PM EST) — cost safety net
@@ -105,9 +105,9 @@ jobs:
               # The workflow then WAITS for the SSM command to finish and FAILS the run on any
               # non-Success status — so a green run means actually deployed + healthy, not merely
               # dispatched.
-              BRANCH="${{ inputs.branch || 'hardening/enterprise' }}"
+              BRANCH="${{ inputs.branch || 'develop' }}"
               CID=$(aws ssm send-command --instance-ids "$IID" --document-name AWS-RunShellScript \
-                --parameters 'commands=["set -e","cd /opt/illuma-memory","git fetch origin","git reset --hard origin/${{ inputs.branch || 'hardening/enterprise' }}","docker builder prune -af || true","docker image prune -af || true","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --no-deps --force-recreate illuma-memory","for i in $(seq 1 40); do curl -fsS --max-time 5 http://localhost:${{ env.PORT }}/health >/dev/null && break || sleep 6; done","curl -fsS --max-time 5 http://localhost:${{ env.PORT }}/health","echo DEPLOYED_HEAD=$(git rev-parse --short HEAD)"]' \
+                --parameters 'commands=["set -e","cd /opt/illuma-memory","git fetch origin","git reset --hard origin/${{ inputs.branch || 'develop' }}","docker builder prune -af || true","docker image prune -af || true","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --no-deps --force-recreate illuma-memory","for i in $(seq 1 40); do curl -fsS --max-time 5 http://localhost:${{ env.PORT }}/health >/dev/null && break || sleep 6; done","curl -fsS --max-time 5 http://localhost:${{ env.PORT }}/health","echo DEPLOYED_HEAD=$(git rev-parse --short HEAD)"]' \
                 --timeout-seconds 2400 --query 'Command.CommandId' --output text)
               echo "- Redeploy SSM command \`$CID\` (branch \`$BRANCH\`) — building + force-recreating on the box, waiting for completion..." >> $GITHUB_STEP_SUMMARY
               # Build can take 10-15 min; the built-in `command-executed` waiter is too short, so poll.
