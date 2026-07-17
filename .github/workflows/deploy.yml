@@ -17,6 +17,7 @@ on:
           - mongodb
           - observe
           - clickhouse
+          - agent-bridge
           - builder
           - redis
           - postgres

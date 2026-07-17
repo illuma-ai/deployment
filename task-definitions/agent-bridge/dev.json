@@ -1,0 +1,353 @@
+{
+  "family": "illuma-ai-agent-bridge-td-dev",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-dev",
+  "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-dev",
+  "containerDefinitions": [
+    {
+      "name": "illuma-ai-agent-bridge",
+      "image": "423159469683.dkr.ecr.us-east-1.amazonaws.com/illuma-ai-agent-bridge-dev:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8100,
+          "hostPort": 8100,
+          "protocol": "tcp"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "ADMIN_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:ADMIN_API_KEY::"
+        },
+        {
+          "name": "AGENT_API_BASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:AGENT_API_BASE_URL::"
+        },
+        {
+          "name": "AGENT_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:AGENT_API_KEY::"
+        },
+        {
+          "name": "AGENT_API_MAX_CONCURRENCY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:AGENT_API_MAX_CONCURRENCY::"
+        },
+        {
+          "name": "AGENT_API_TIMEOUT_MS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:AGENT_API_TIMEOUT_MS::"
+        },
+        {
+          "name": "AWS_REGION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:AWS_REGION::"
+        },
+        {
+          "name": "CALLBACK_ALLOWED_HOSTS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:CALLBACK_ALLOWED_HOSTS::"
+        },
+        {
+          "name": "CALLBACK_TIMEOUT_MS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:CALLBACK_TIMEOUT_MS::"
+        },
+        {
+          "name": "CONNECTIONS_POST_CONNECT_REDIRECT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:CONNECTIONS_POST_CONNECT_REDIRECT::"
+        },
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:DATABASE_URL::"
+        },
+        {
+          "name": "DB_AUTO_MIGRATE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:DB_AUTO_MIGRATE::"
+        },
+        {
+          "name": "DLQ_RETENTION_DAYS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:DLQ_RETENTION_DAYS::"
+        },
+        {
+          "name": "DOCS_ENABLED",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:DOCS_ENABLED::"
+        },
+        {
+          "name": "ENCRYPTION_ACTIVE_KID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:ENCRYPTION_ACTIVE_KID::"
+        },
+        {
+          "name": "ENCRYPTION_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:ENCRYPTION_KEY::"
+        },
+        {
+          "name": "ENCRYPTION_KEYS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:ENCRYPTION_KEYS::"
+        },
+        {
+          "name": "GLOBAL_RATE_LIMIT_PER_MINUTE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:GLOBAL_RATE_LIMIT_PER_MINUTE::"
+        },
+        {
+          "name": "GOOGLE_CLIENT_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:GOOGLE_CLIENT_ID::"
+        },
+        {
+          "name": "GOOGLE_CLIENT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:GOOGLE_CLIENT_SECRET::"
+        },
+        {
+          "name": "GOOGLE_OAUTH_REDIRECT_URI",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:GOOGLE_OAUTH_REDIRECT_URI::"
+        },
+        {
+          "name": "GOOGLE_OAUTH_SCOPES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:GOOGLE_OAUTH_SCOPES::"
+        },
+        {
+          "name": "GRAPH_TIMEOUT_MS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:GRAPH_TIMEOUT_MS::"
+        },
+        {
+          "name": "HITL_CORRELATION_TTL_MS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:HITL_CORRELATION_TTL_MS::"
+        },
+        {
+          "name": "HITL_EXPIRE_CRON",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:HITL_EXPIRE_CRON::"
+        },
+        {
+          "name": "HOST",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:HOST::"
+        },
+        {
+          "name": "HOST_EVENTS_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:HOST_EVENTS_SECRET::"
+        },
+        {
+          "name": "HOST_EVENTS_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:HOST_EVENTS_URL::"
+        },
+        {
+          "name": "HTTP_BODY_LIMIT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:HTTP_BODY_LIMIT::"
+        },
+        {
+          "name": "INBOUND_MAX_RETRIES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:INBOUND_MAX_RETRIES::"
+        },
+        {
+          "name": "INBOUND_RETRY_BACKOFF",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:INBOUND_RETRY_BACKOFF::"
+        },
+        {
+          "name": "LOG_LEVEL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:LOG_LEVEL::"
+        },
+        {
+          "name": "LOG_PRETTY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:LOG_PRETTY::"
+        },
+        {
+          "name": "MAILBOX_ATTACHMENT_BINARY_ENABLED",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAILBOX_ATTACHMENT_BINARY_ENABLED::"
+        },
+        {
+          "name": "MAILBOX_ATTACHMENT_BINARY_MAX_BYTES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAILBOX_ATTACHMENT_BINARY_MAX_BYTES::"
+        },
+        {
+          "name": "MAILBOX_ATTACHMENT_BINARY_MAX_COUNT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAILBOX_ATTACHMENT_BINARY_MAX_COUNT::"
+        },
+        {
+          "name": "MAILBOX_ATTACHMENT_BINARY_TOTAL_BYTES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAILBOX_ATTACHMENT_BINARY_TOTAL_BYTES::"
+        },
+        {
+          "name": "MAILBOX_ATTACHMENT_INLINE_ENABLED",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAILBOX_ATTACHMENT_INLINE_ENABLED::"
+        },
+        {
+          "name": "MAILBOX_ATTACHMENT_INLINE_MAX_BYTES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAILBOX_ATTACHMENT_INLINE_MAX_BYTES::"
+        },
+        {
+          "name": "MAILBOX_ATTACHMENT_INLINE_MAX_COUNT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAILBOX_ATTACHMENT_INLINE_MAX_COUNT::"
+        },
+        {
+          "name": "MAILBOX_ATTACHMENT_INLINE_TOTAL_BYTES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAILBOX_ATTACHMENT_INLINE_TOTAL_BYTES::"
+        },
+        {
+          "name": "MAILBOX_SELF_ECHO_GUARD_ENABLED",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAILBOX_SELF_ECHO_GUARD_ENABLED::"
+        },
+        {
+          "name": "MAX_POLL_ITEM_BYTES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAX_POLL_ITEM_BYTES::"
+        },
+        {
+          "name": "MAX_TRANSCRIPT_MESSAGES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAX_TRANSCRIPT_MESSAGES::"
+        },
+        {
+          "name": "MAX_TRIGGER_TEXT_CHARS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MAX_TRIGGER_TEXT_CHARS::"
+        },
+        {
+          "name": "METRICS_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:METRICS_API_KEY::"
+        },
+        {
+          "name": "MS_AGENT_MAILBOX",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MS_AGENT_MAILBOX::"
+        },
+        {
+          "name": "MS_CLIENT_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MS_CLIENT_ID::"
+        },
+        {
+          "name": "MS_CLIENT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MS_CLIENT_SECRET::"
+        },
+        {
+          "name": "MS_GRAPH_CLIENT_STATE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MS_GRAPH_CLIENT_STATE::"
+        },
+        {
+          "name": "MS_OAUTH_REDIRECT_URI",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MS_OAUTH_REDIRECT_URI::"
+        },
+        {
+          "name": "MS_OAUTH_SCOPES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MS_OAUTH_SCOPES::"
+        },
+        {
+          "name": "MS_SUBSCRIPTION_RENEW_CRON",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MS_SUBSCRIPTION_RENEW_CRON::"
+        },
+        {
+          "name": "MS_TENANT_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:MS_TENANT_ID::"
+        },
+        {
+          "name": "NODE_ENV",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:NODE_ENV::"
+        },
+        {
+          "name": "PGBOSS_SCHEMA",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:PGBOSS_SCHEMA::"
+        },
+        {
+          "name": "POLL_JITTER_MAX_MS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:POLL_JITTER_MAX_MS::"
+        },
+        {
+          "name": "POLL_MAX_BATCH_SIZE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:POLL_MAX_BATCH_SIZE::"
+        },
+        {
+          "name": "POLL_MAX_CONCURRENCY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:POLL_MAX_CONCURRENCY::"
+        },
+        {
+          "name": "POLL_MIN_INTERVAL_MINUTES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:POLL_MIN_INTERVAL_MINUTES::"
+        },
+        {
+          "name": "POLL_RUN_RETENTION_DAYS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:POLL_RUN_RETENTION_DAYS::"
+        },
+        {
+          "name": "POLL_TIMEOUT_MS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:POLL_TIMEOUT_MS::"
+        },
+        {
+          "name": "PORT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:PORT::"
+        },
+        {
+          "name": "PUBLIC_BASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:PUBLIC_BASE_URL::"
+        },
+        {
+          "name": "RSS_ALLOW_PRIVATE_FEEDS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:RSS_ALLOW_PRIVATE_FEEDS::"
+        },
+        {
+          "name": "RUN_LEASE_TTL_MS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:RUN_LEASE_TTL_MS::"
+        },
+        {
+          "name": "SECRETS_CACHE_TTL_SECONDS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:SECRETS_CACHE_TTL_SECONDS::"
+        },
+        {
+          "name": "SECRETS_LIST_MAX",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:SECRETS_LIST_MAX::"
+        },
+        {
+          "name": "SENT_MESSAGE_LEDGER_CLEANUP_CRON",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:SENT_MESSAGE_LEDGER_CLEANUP_CRON::"
+        },
+        {
+          "name": "SENT_MESSAGE_LEDGER_TTL_MS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:SENT_MESSAGE_LEDGER_TTL_MS::"
+        },
+        {
+          "name": "TENANT_MAX_CONCURRENCY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:TENANT_MAX_CONCURRENCY::"
+        },
+        {
+          "name": "WEBHOOK_ADMIN_FALLBACK",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:WEBHOOK_ADMIN_FALLBACK::"
+        },
+        {
+          "name": "WEBHOOK_KEY_RATE_LIMIT_PER_MINUTE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:WEBHOOK_KEY_RATE_LIMIT_PER_MINUTE::"
+        },
+        {
+          "name": "WORKFLOW_API_ALLOWED_HOSTS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:WORKFLOW_API_ALLOWED_HOSTS::"
+        },
+        {
+          "name": "WORKFLOW_API_ALLOW_PRIVATE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:WORKFLOW_API_ALLOW_PRIVATE::"
+        },
+        {
+          "name": "WORKFLOW_API_BASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:WORKFLOW_API_BASE_URL::"
+        },
+        {
+          "name": "WORKFLOW_API_MAX_CONCURRENCY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:WORKFLOW_API_MAX_CONCURRENCY::"
+        },
+        {
+          "name": "WORKFLOW_API_TIMEOUT_MS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/agent-bridge-REPLACE_WITH_SECRET_SUFFIX:WORKFLOW_API_TIMEOUT_MS::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/illuma-ai-agent-bridge-dev",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:8100/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 5,
+        "startPeriod": 120
+      }
+    }
+  ]
+}
