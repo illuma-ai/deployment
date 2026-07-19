@@ -54,10 +54,6 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:APP_TITLE::"
         },
         {
-          "name": "AWS_ACCESS_KEY_ID",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:AWS_ACCESS_KEY_ID::"
-        },
-        {
           "name": "AWS_BUCKET_NAME",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:AWS_BUCKET_NAME::"
         },
@@ -66,20 +62,8 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:AWS_REGION::"
         },
         {
-          "name": "AWS_SECRET_ACCESS_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:AWS_SECRET_ACCESS_KEY::"
-        },
-        {
-          "name": "BEDROCK_AWS_ACCESS_KEY_ID",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:BEDROCK_AWS_ACCESS_KEY_ID::"
-        },
-        {
           "name": "BEDROCK_AWS_DEFAULT_REGION",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:BEDROCK_AWS_DEFAULT_REGION::"
-        },
-        {
-          "name": "BEDROCK_AWS_SECRET_ACCESS_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:BEDROCK_AWS_SECRET_ACCESS_KEY::"
         },
         {
           "name": "CONFIG_PATH",
@@ -184,6 +168,10 @@
         {
           "name": "USE_REDIS",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:USE_REDIS::"
+        },
+        {
+          "name": "VOICE_SERVICE_PUBLIC_WS_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:VOICE_SERVICE_PUBLIC_WS_URL::"
         },
         {
           "name": "VOICE_SERVICE_URL",
