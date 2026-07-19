@@ -215,6 +215,9 @@ jobs:
           case "$SERVICE" in
             observe) REPO="observability" ;;
             voice)   REPO="illuma-voice" ;;
+            # the `chat` service now runs chat-v2 (the LibreChat fork); the legacy
+            # ranger repo illuma-ai/chat is retired. Task def + secret are chat-v2.
+            chat)    REPO="chat-v2" ;;
             *)       REPO="$SERVICE" ;;
           esac
           echo "Cloning illuma-ai/$REPO (branch: $REF)..."
