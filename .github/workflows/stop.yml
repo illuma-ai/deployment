@@ -19,6 +19,7 @@ on:
           - clickhouse
           - agent-bridge
           - builder
+          - voice
           - redis
           - postgres
       environment:

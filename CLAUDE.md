@@ -38,6 +38,7 @@ deployment/
 | clickhouse | illuma-ai-clickhouse-svc-{env} | 8123 |
 | builder | illuma-ai-builder-svc-{env} | 3001 |
 | agent-bridge | illuma-ai-agent-bridge-svc-{env} | 8100 |
+| voice | illuma-ai-voice-svc-{env} | 8210 |
 
 ## Deployment Flow
 
@@ -57,6 +58,9 @@ Service repo push (develop/main)
 - **Domains:** `observe-dev.gaavi.ai` (dev), `observe.gaavi.ai` (prod) — observe
 - **Domains:** `builder-dev.gaavi.ai` (dev), `builder.gaavi.ai` (prod) — builder
 - **Domains:** `bridge-dev.gaavi.ai` (dev), `bridge.gaavi.ai` (prod) — agent-bridge
+- **Domains:** `voice-dev.gaavi.ai` (dev), `voice.gaavi.ai` (prod) — voice
+  (service name `voice` → repo `illuma-ai/illuma-voice`; mapping in deploy.yml
+  "Clone service repo" step)
   (one subdomain + one CloudFront distribution PER service, all origin to the
   shared ALB `illuma-ai-alb-{env}` via a host-header listener rule — never
   path/context-path routing on a shared domain; DNS lives at GoDaddy, not

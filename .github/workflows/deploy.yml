@@ -19,6 +19,7 @@ on:
           - clickhouse
           - agent-bridge
           - builder
+          - voice
           - redis
           - postgres
       environment:
@@ -213,6 +214,7 @@ jobs:
           # Map service name to repo name (when they differ)
           case "$SERVICE" in
             observe) REPO="observability" ;;
+            voice)   REPO="illuma-voice" ;;
             *)       REPO="$SERVICE" ;;
           esac
           echo "Cloning illuma-ai/$REPO (branch: $REF)..."

@@ -1,0 +1,58 @@
+{
+  "family": "illuma-ai-voice-td-prod",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "4096",
+  "memory": "8192",
+  "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-prod",
+  "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-prod",
+  "containerDefinitions": [
+    {
+      "name": "illuma-ai-voice",
+      "image": "423159469683.dkr.ecr.us-east-1.amazonaws.com/illuma-ai-voice-prod:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8210,
+          "hostPort": 8210,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "PORT", "value": "8210" },
+        { "name": "INFERENCE_DEVICE", "value": "cpu" },
+        { "name": "WHISPER_MODEL", "value": "small.en" },
+        { "name": "VAD_ENGINE", "value": "silero" },
+        { "name": "TURN_DETECTOR", "value": "smart_turn" },
+        { "name": "TTS_ENGINE", "value": "kokoro" },
+        { "name": "HF_HUB_OFFLINE", "value": "1" }
+      ],
+      "secrets": [
+        {
+          "name": "VOICE_SESSION_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/prod/voice-REPLACE_WITH_SECRET_SUFFIX:VOICE_SESSION_SECRET::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/illuma-ai-voice-prod",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8210/health').status==200 else 1)\" || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 5,
+        "startPeriod": 180
+      }
+    }
+  ]
+}
