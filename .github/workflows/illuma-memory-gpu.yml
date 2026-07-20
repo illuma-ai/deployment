@@ -95,6 +95,13 @@ jobs:
               # container (build succeeds + tags a new image, but the old container keeps serving
               # stale code — "green != deployed"). This does it verified + SYNCHRONOUS on the box:
               #   1. git reset --hard to the branch tip
+              #   1b. re-assert SHARED secrets from Secrets Manager into .env
+              #      (`illuma-ai/dev/illuma-memory`). `JWT_SECRET` is a CONTRACT with the host
+              #      chat platform: the host signs a short-lived bearer with ITS JWT_SECRET and
+              #      calls this service's `/graph/*` + RAG routers. If the two drift, this
+              #      service 401s and the host silently degrades (knowledge graph fails to load,
+              #      retrieval returns nothing) while /health stays green. `.env` is gitignored
+              #      so it survives `git reset --hard`, but NOT a rebuilt box — hence the sync.
               #   2. prune (repeated multi-GB CUDA rebuilds fill the disk; a full disk makes new
               #      layer extraction fail with "no space left" and the old container keeps running)
               #   3. build the new image
@@ -107,7 +114,7 @@ jobs:
               # dispatched.
               BRANCH="${{ inputs.branch || 'develop' }}"
               CID=$(aws ssm send-command --instance-ids "$IID" --document-name AWS-RunShellScript \
-                --parameters 'commands=["set -e","cd /opt/illuma-memory","git fetch origin","git reset --hard origin/${{ inputs.branch || 'develop' }}","docker builder prune -af || true","docker image prune -af || true","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --no-deps --force-recreate illuma-memory","for i in $(seq 1 40); do curl -fsS --max-time 5 http://localhost:${{ env.PORT }}/health >/dev/null && break || sleep 6; done","curl -fsS --max-time 5 http://localhost:${{ env.PORT }}/health","echo DEPLOYED_HEAD=$(git rev-parse --short HEAD)"]' \
+                --parameters 'commands=["set -e","cd /opt/illuma-memory","git fetch origin","git reset --hard origin/${{ inputs.branch || 'develop' }}","bash scripts/sync-shared-secrets.sh /opt/illuma-memory/.env","docker builder prune -af || true","docker image prune -af || true","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --build","docker compose -p illuma-memory -f docker-compose.yml -f docker-compose.gpu.yml --profile kg up -d --no-deps --force-recreate illuma-memory","for i in $(seq 1 40); do curl -fsS --max-time 5 http://localhost:${{ env.PORT }}/health >/dev/null && break || sleep 6; done","curl -fsS --max-time 5 http://localhost:${{ env.PORT }}/health","echo DEPLOYED_HEAD=$(git rev-parse --short HEAD)"]' \
                 --timeout-seconds 2400 --query 'Command.CommandId' --output text)
               echo "- Redeploy SSM command \`$CID\` (branch \`$BRANCH\`) — building + force-recreating on the box, waiting for completion..." >> $GITHUB_STEP_SUMMARY
               # Build can take 10-15 min; the built-in `command-executed` waiter is too short, so poll.
