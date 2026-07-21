@@ -29,8 +29,12 @@ on:
         required: false
         default: 'develop'
         type: string
-  schedule:
-    - cron: '0 4 * * *'   # nightly auto-stop (11 PM EST) — cost safety net
+  # DISABLED 2026-07-21 (user request): the illuma-memory GPU box must run
+  # CONTINUOUSLY — no nightly auto-stop. Kept (not deleted) so the cost safety
+  # net can be restored by un-commenting. Manual start/stop/redeploy still works.
+  # NOTE: this box is a g6.xlarge (GPU) — the single most expensive dev resource.
+  # schedule:
+  #   - cron: '0 4 * * *'   # nightly auto-stop (11 PM EST) — cost safety net
 
 permissions:
   contents: read

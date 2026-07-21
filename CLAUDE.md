@@ -6,6 +6,19 @@ Lightweight deployment orchestrator for the Illuma AI platform. Contains NO appl
 
 **GitHub:** `illuma-ai/deployment` (public)
 
+## ⚠️ DEV MUST RUN CONTINUOUSLY — auto-stop crons are DISABLED (2026-07-21)
+
+Per an explicit standing user decision, **no dev service may auto-stop**. The two
+nightly auto-stop schedules are **commented out (NOT deleted)** so the cost safety
+net can be restored later by un-commenting:
+- `stop-all.yml` — `schedule: cron '0 4 * * *'` (was: stop ALL dev ECS services)
+- `illuma-memory-gpu.yml` — `schedule: cron '0 4 * * *'` (was: stop the g6.xlarge GPU box)
+
+Do **NOT** re-enable these (or add any new stop schedule) unless the user explicitly
+asks. Manual `workflow_dispatch` stop still works for one-off shutdowns.
+**Cost note:** the illuma-memory box is a **g6.xlarge GPU** — the most expensive dev
+resource — and will now run 24/7 until manually stopped.
+
 ## Structure
 
 ```

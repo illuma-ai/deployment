@@ -11,8 +11,11 @@ on:
           - dev
           - prod
 
-  schedule:
-    - cron: '0 4 * * *'   # Auto-stop dev at 11 PM EST daily
+  # DISABLED 2026-07-21 (user request): dev must run CONTINUOUSLY — no nightly
+  # auto-stop of the dev ECS services. Kept (not deleted) so the cost safety net
+  # can be restored by simply un-commenting. Manual workflow_dispatch still works.
+  # schedule:
+  #   - cron: '0 4 * * *'   # Auto-stop dev at 11 PM EST daily
 
 permissions:
   id-token: write
