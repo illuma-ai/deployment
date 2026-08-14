@@ -66,6 +66,26 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:BEDROCK_AWS_DEFAULT_REGION::"
         },
         {
+          "name": "CODEAPI_AUTH_PROVIDER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:CODEAPI_AUTH_PROVIDER::"
+        },
+        {
+          "name": "CODEAPI_JWT_ALGORITHM",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:CODEAPI_JWT_ALGORITHM::"
+        },
+        {
+          "name": "CODEAPI_JWT_AUDIENCE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:CODEAPI_JWT_AUDIENCE::"
+        },
+        {
+          "name": "CODEAPI_JWT_ISSUER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:CODEAPI_JWT_ISSUER::"
+        },
+        {
+          "name": "CODEAPI_JWT_PRIVATE_KEY_BASE64",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:CODEAPI_JWT_PRIVATE_KEY_BASE64::"
+        },
+        {
           "name": "CONFIG_PATH",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:CONFIG_PATH::"
         },
