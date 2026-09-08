@@ -1,0 +1,225 @@
+{
+  "family": "illuma-ai-salvea-td-dev",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-execution-role-dev",
+  "taskRoleArn": "arn:aws:iam::423159469683:role/illuma-ai-ecs-task-role-dev",
+  "containerDefinitions": [
+    {
+      "name": "illuma-ai-salvea",
+      "image": "423159469683.dkr.ecr.us-east-1.amazonaws.com/illuma-ai-salvea-dev:dev",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3080,
+          "hostPort": 3080,
+          "protocol": "tcp"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "AGENT_BRIDGE_ADMIN_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:AGENT_BRIDGE_ADMIN_KEY::"
+        },
+        {
+          "name": "AGENT_BRIDGE_EVENTS_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:AGENT_BRIDGE_EVENTS_SECRET::"
+        },
+        {
+          "name": "AGENT_BRIDGE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:AGENT_BRIDGE_URL::"
+        },
+        {
+          "name": "ALLOW_EMAIL_LOGIN",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:ALLOW_EMAIL_LOGIN::"
+        },
+        {
+          "name": "ALLOW_REGISTRATION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:ALLOW_REGISTRATION::"
+        },
+        {
+          "name": "ALLOW_SOCIAL_LOGIN",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:ALLOW_SOCIAL_LOGIN::"
+        },
+        {
+          "name": "ALLOW_UNVERIFIED_EMAIL_LOGIN",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:ALLOW_UNVERIFIED_EMAIL_LOGIN::"
+        },
+        {
+          "name": "APP_TITLE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:APP_TITLE::"
+        },
+        {
+          "name": "AWS_BUCKET_NAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:AWS_BUCKET_NAME::"
+        },
+        {
+          "name": "AWS_REGION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:AWS_REGION::"
+        },
+        {
+          "name": "BEDROCK_AWS_DEFAULT_REGION",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:BEDROCK_AWS_DEFAULT_REGION::"
+        },
+        {
+          "name": "CODEAPI_AUTH_PROVIDER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:CODEAPI_AUTH_PROVIDER::"
+        },
+        {
+          "name": "CODEAPI_JWT_ALGORITHM",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:CODEAPI_JWT_ALGORITHM::"
+        },
+        {
+          "name": "CODEAPI_JWT_AUDIENCE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:CODEAPI_JWT_AUDIENCE::"
+        },
+        {
+          "name": "CODEAPI_JWT_ISSUER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:CODEAPI_JWT_ISSUER::"
+        },
+        {
+          "name": "CODEAPI_JWT_PRIVATE_KEY_BASE64",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:CODEAPI_JWT_PRIVATE_KEY_BASE64::"
+        },
+        {
+          "name": "CONFIG_PATH",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:CONFIG_PATH::"
+        },
+        {
+          "name": "CONSOLE_JSON",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:CONSOLE_JSON::"
+        },
+        {
+          "name": "CREDS_IV",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:CREDS_IV::"
+        },
+        {
+          "name": "CREDS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:CREDS_KEY::"
+        },
+        {
+          "name": "DOMAIN_CLIENT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:DOMAIN_CLIENT::"
+        },
+        {
+          "name": "DOMAIN_SERVER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:DOMAIN_SERVER::"
+        },
+        {
+          "name": "ENDPOINTS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:ENDPOINTS::"
+        },
+        {
+          "name": "FIRECRAWL_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:FIRECRAWL_API_KEY::"
+        },
+        {
+          "name": "HOST",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:HOST::"
+        },
+        {
+          "name": "JINA_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:JINA_API_KEY::"
+        },
+        {
+          "name": "JWT_REFRESH_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:JWT_REFRESH_SECRET::"
+        },
+        {
+          "name": "JWT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:JWT_SECRET::"
+        },
+        {
+          "name": "ILLUMA_CODE_BASEURL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:LIBRECHAT_CODE_BASEURL::"
+        },
+        {
+          "name": "MEMORY_SERVICE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:MEMORY_SERVICE_URL::"
+        },
+        {
+          "name": "MONGO_URI",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:MONGO_URI::"
+        },
+        {
+          "name": "NODE_ENV",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:NODE_ENV::"
+        },
+        {
+          "name": "NO_INDEX",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:NO_INDEX::"
+        },
+        {
+          "name": "PORT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:PORT::"
+        },
+        {
+          "name": "RAG_API_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:RAG_API_URL::"
+        },
+        {
+          "name": "REDIS_URI",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:REDIS_URI::"
+        },
+        {
+          "name": "REFRESH_TOKEN_EXPIRY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:REFRESH_TOKEN_EXPIRY::"
+        },
+        {
+          "name": "SEARCH",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:SEARCH::"
+        },
+        {
+          "name": "SERPER_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:SERPER_API_KEY::"
+        },
+        {
+          "name": "SESSION_EXPIRY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:SESSION_EXPIRY::"
+        },
+        {
+          "name": "TRUST_PROXY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:TRUST_PROXY::"
+        },
+        {
+          "name": "USE_REDIS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:USE_REDIS::"
+        },
+        {
+          "name": "VOICE_SERVICE_PUBLIC_WS_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:VOICE_SERVICE_PUBLIC_WS_URL::"
+        },
+        {
+          "name": "VOICE_SERVICE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:VOICE_SERVICE_URL::"
+        },
+        {
+          "name": "VOICE_SESSION_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/salvea-TMm4Zp:VOICE_SESSION_SECRET::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/illuma-ai-salvea-dev",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:3080/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 5,
+        "startPeriod": 180
+      }
+    }
+  ]
+}

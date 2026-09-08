@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - chat
+          - salvea
           - rag-api
           - code-executor
           - memory

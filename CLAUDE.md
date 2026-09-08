@@ -41,6 +41,7 @@ deployment/
 | Service | ECS Name | Port |
 |---------|----------|------|
 | chat | illuma-ai-chat-svc-{env} | 3080 |
+| salvea | illuma-ai-salvea-svc-{env} | 3080 | (chat-v2 source built with `BRAND=salvea`; own task def, secret, DB, bucket)
 | rag-api | illuma-ai-rag-api-svc-{env} | 8000 |
 | code-executor | illuma-ai-code-executor-svc-{env} | 8088 |
 | memory | illuma-ai-memory-svc-{env} | 8001 |
@@ -68,6 +69,11 @@ Service repo push (develop/main)
 
 - **ALL resources use `illuma-ai-*` prefix** — NEVER gaavi/codevakure/librechat
 - **Domains:** `dev-illuma.gaavi.ai` (dev), `illuma.gaavi.ai` (prod) — chat
+- **Domains:** `d2ct58a2o30sem.cloudfront.net` (dev, CloudFront E3QMXKN6PGGNJS — no custom domain yet) — salvea
+  (same chat-v2 source, `docker build --build-arg BRAND=salvea`; ALB rule priority 30 matches the
+  CloudFront host header → `illuma-ai-salvea-tg-dev`; secret `illuma-ai/dev/salvea`, DB `salvea`,
+  bucket `illuma-ai-salvea-dev`, Cloud Map `salvea.illuma-ai.local`. When a domain exists: add the
+  alias + ACM cert to that distribution and a second host-header value on the rule)
 - **Domains:** `observe-dev.gaavi.ai` (dev), `observe.gaavi.ai` (prod) — observe
 - **Domains:** `builder-dev.gaavi.ai` (dev), `builder.gaavi.ai` (prod) — builder
 - **Domains:** `bridge-dev.gaavi.ai` (dev), `bridge.gaavi.ai` (prod) — agent-bridge

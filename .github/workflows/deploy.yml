@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - chat
+          - salvea
           - rag-api
           - code-executor
           - memory
@@ -218,6 +219,9 @@ jobs:
             # the `chat` service now runs chat-v2 (the LibreChat fork); the legacy
             # ranger repo illuma-ai/chat is retired. Task def + secret are chat-v2.
             chat)    REPO="chat-v2" ;;
+            # `salvea` is the SAME chat-v2 source built with its own brand profile
+            # (Dockerfile ARG BRAND=salvea, see the build step); own task def + secret.
+            salvea)  REPO="chat-v2" ;;
             *)       REPO="$SERVICE" ;;
           esac
           echo "Cloning illuma-ai/$REPO (branch: $REF)..."
@@ -248,7 +252,13 @@ jobs:
           IMAGE_REPO="$ECR_REGISTRY/illuma-ai-$SERVICE-$ENV"
           SHA="${{ needs.resolve.outputs.sha || github.sha }}"
           SHORT_SHA="${SHA:0:8}"
-          docker build \
+          # Brand profile: a second product from the chat-v2 source selects its
+          # profile at build time (brands/<name>/ in chat-v2). Default = illuma.
+          BUILD_ARGS=""
+          case "$SERVICE" in
+            salvea) BUILD_ARGS="--build-arg BRAND=salvea" ;;
+          esac
+          docker build $BUILD_ARGS \
             -t "$IMAGE_REPO:$SHA" \
             -t "$IMAGE_REPO:$SHORT_SHA" \
             -t "$IMAGE_REPO:$ENV" \
