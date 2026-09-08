@@ -134,7 +134,7 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:JWT_SECRET::"
         },
         {
-          "name": "LIBRECHAT_CODE_BASEURL",
+          "name": "ILLUMA_CODE_BASEURL",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:423159469683:secret:illuma-ai/dev/chat-v2-la57J1:LIBRECHAT_CODE_BASEURL::"
         },
         {
