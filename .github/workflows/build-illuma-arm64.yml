@@ -1,6 +1,6 @@
 name: Build illuma (arm64)
 
-# Builds a static aarch64 Linux binary of illuma (private repo illuma-ai/kotomori by default) on a native arm64 runner, for
+# Builds a static aarch64 Linux binary of illuma (private repo illuma-ai/illuma-code by default) on a native arm64 runner, for
 # the ARM64 computer runtimes (AgentCore, Lambda MicroVMs). x86_64 builds come from illuma's own
 # pipeline; this workflow builds arm64 only, so there is one source for each architecture.
 # The source is cloned at run time with PRIVATE_REPO_PAT and never changed; the binary goes to
@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       repo:
-        description: 'Repository under illuma-ai holding illuma (the live one is kotomori)'
+        description: 'Repository under illuma-ai holding illuma (the live one is illuma-code)'
         required: true
-        default: 'kotomori'
+        default: 'illuma-code'
       ref:
         description: 'illuma branch, tag or commit to build'
         required: true
