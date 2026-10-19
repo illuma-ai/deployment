@@ -49,24 +49,13 @@ jobs:
         working-directory: source
         run: rustup toolchain install && rustc --version
 
-      - name: Rust gate
-        working-directory: source
-        run: |
-          cargo fmt --all -- --check
-          cargo clippy --workspace --all-targets --locked -- -D warnings
-          cargo test --workspace --locked
-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '24'
 
-      - name: Web gate
-        working-directory: source/web
-        run: |
-          npm ci --no-audit --no-fund
-          npm run typecheck
-          npm test
-          npm run build
+      - name: Gate (the repo's own scripts/gate.sh, the same one developers run)
+        working-directory: source
+        run: bash scripts/gate.sh all
 
   images:
     name: Images (${{ matrix.arch }})
