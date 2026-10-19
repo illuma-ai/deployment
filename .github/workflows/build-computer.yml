@@ -1,0 +1,178 @@
+name: Build Computer Images
+
+# Builds the computer manager's in-computer images (the supervisor on a base or desktop userland)
+# for x86_64 and arm64 on native runners, in parallel, and pushes them to private ECR as one
+# multi-architecture tag per image. The source stays private: it is cloned at run time with
+# PRIVATE_REPO_PAT, nothing is uploaded as a workflow artifact except image digests, and the
+# clone's .git (which holds the token) is removed before any image build.
+#
+# Manual only, like every workflow here.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'computer-manager branch, tag or commit to build'
+        required: true
+        default: 'develop'
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  gate:
+    name: Gate (Rust and web)
+    runs-on: ubuntu-24.04
+    outputs:
+      sha: ${{ steps.clone.outputs.sha }}
+    steps:
+      - name: Clone computer-manager
+        id: clone
+        run: |
+          git clone --quiet --filter=blob:none \
+            "https://x-access-token:${{ secrets.PRIVATE_REPO_PAT }}@github.com/illuma-ai/computer-manager.git" source
+          git -C source checkout --quiet "${{ inputs.ref }}"
+          echo "sha=$(git -C source rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          git -C source remote set-url origin https://github.com/illuma-ai/computer-manager.git
+
+      - name: Rust toolchain
+        run: rustup toolchain install stable --profile minimal --component clippy,rustfmt && rustup default stable
+
+      - name: Rust gate
+        working-directory: source
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets --locked -- -D warnings
+          cargo test --workspace --locked
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+
+      - name: Web gate
+        working-directory: source/web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm test
+          npm run build
+
+  images:
+    name: Images (${{ matrix.arch }})
+    needs: gate
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Clone computer-manager at the gated commit
+        run: |
+          git clone --quiet --filter=blob:none \
+            "https://x-access-token:${{ secrets.PRIVATE_REPO_PAT }}@github.com/illuma-ai/computer-manager.git" source
+          git -C source checkout --quiet "${{ needs.gate.outputs.sha }}"
+          # The token lives in .git/config; the image build copies the source tree, so .git goes.
+          rm -rf source/.git
+
+      - uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+
+      - name: Ensure the ECR repositories exist (scan on push, immutable tags)
+        run: |
+          for name in computer-base computer-desktop; do
+            repo="illuma-ai-$name-${{ inputs.environment }}"
+            aws ecr describe-repositories --repository-names "$repo" >/dev/null 2>&1 || \
+              aws ecr create-repository --repository-name "$repo" \
+                --image-scanning-configuration scanOnPush=true \
+                --image-tag-mutability IMMUTABLE \
+                --encryption-configuration encryptionType=KMS >/dev/null
+          done
+
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Build and push by digest
+        working-directory: source
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          ENV: ${{ inputs.environment }}
+        run: |
+          mkdir -p /tmp/digests
+          for name in base desktop; do
+            repo="$REGISTRY/illuma-ai-computer-$name-$ENV"
+            docker buildx build \
+              --platform "linux/${{ matrix.arch }}" \
+              --file "images/$name/Dockerfile" \
+              --output "type=image,name=$repo,push-by-digest=true,name-canonical=true,push=true" \
+              --metadata-file "/tmp/meta-$name.json" \
+              --provenance=mode=min \
+              .
+            digest=$(python3 -c "import json;print(json.load(open('/tmp/meta-$name.json'))['containerimage.digest'])")
+            echo "$digest" > "/tmp/digests/$name-${{ matrix.arch }}"
+          done
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: digests-${{ matrix.arch }}
+          path: /tmp/digests/*
+          retention-days: 1
+
+  publish:
+    name: Publish multi-architecture tags
+    needs: [gate, images]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: One tag per image for both architectures
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          ENV: ${{ inputs.environment }}
+          SHA: ${{ needs.gate.outputs.sha }}
+        run: |
+          tag="sha-${SHA:0:12}"
+          for name in base desktop; do
+            repo="$REGISTRY/illuma-ai-computer-$name-$ENV"
+            if docker buildx imagetools inspect "$repo:$tag" >/dev/null 2>&1; then
+              echo "$repo:$tag already exists (tags are immutable); skipping"
+              continue
+            fi
+            docker buildx imagetools create -t "$repo:$tag" \
+              "$repo@$(cat /tmp/digests/$name-amd64)" "$repo@$(cat /tmp/digests/$name-arm64)"
+            echo "- \`illuma-ai-computer-$name-$ENV:$tag\` (amd64, arm64)" >> "$GITHUB_STEP_SUMMARY"
+          done
