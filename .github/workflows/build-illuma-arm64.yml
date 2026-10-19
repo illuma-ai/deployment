@@ -1,0 +1,91 @@
+name: Build illuma (arm64)
+
+# Builds a static aarch64 Linux binary of the private illuma repo on a native arm64 runner, for
+# the ARM64 computer runtimes (AgentCore, Lambda MicroVMs). x86_64 builds come from illuma's own
+# pipeline; this workflow builds arm64 only, so there is one source for each architecture.
+# The source is cloned at run time with PRIVATE_REPO_PAT and never changed; the binary goes to
+# private S3 only (no workflow artifact), and the clone's .git (which holds the token) is removed
+# before the build. Manual only.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'illuma branch, tag or commit to build'
+        required: true
+        default: 'feat/request-takeover'
+      rust:
+        description: 'Rust toolchain (illuma pins it in rust-toolchain.toml on newer commits)'
+        required: true
+        default: '1.97.1'
+      bucket_prefix:
+        description: 'Private S3 bucket name before -<account id>'
+        required: true
+        default: 'cm-test-artifacts'
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  build:
+    name: illuma aarch64 (static)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Clone illuma
+        id: clone
+        run: |
+          git clone --quiet --filter=blob:none \
+            "https://x-access-token:${{ secrets.PRIVATE_REPO_PAT }}@github.com/illuma-ai/illuma.git" source
+          git -C source checkout --quiet "${{ inputs.ref }}"
+          echo "sha=$(git -C source rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          rm -rf source/.git
+
+      - name: Build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends build-essential cmake clang pkg-config libssl-dev
+
+      - name: Rust toolchain
+        working-directory: source
+        run: |
+          rustup toolchain install "${{ inputs.rust }}" --profile minimal
+          rustup override set "${{ inputs.rust }}"
+          rustc --version
+
+      - name: Build (release, static C runtime)
+        working-directory: source
+        env:
+          RUSTFLAGS: -C target-feature=+crt-static
+          OPENSSL_STATIC: '1'
+        run: |
+          cargo build --release --locked --target aarch64-unknown-linux-gnu --bin illuma
+          bin=target/aarch64-unknown-linux-gnu/release/illuma
+          strip "$bin"
+          file "$bin"
+          ./"$bin" --version || true
+
+      - uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload to private S3
+        working-directory: source
+        env:
+          SHA: ${{ steps.clone.outputs.sha }}
+        run: |
+          account=$(aws sts get-caller-identity --query Account --output text)
+          bucket="${{ inputs.bucket_prefix }}-$account"
+          key="illuma/${SHA:0:12}/illuma-aarch64-linux"
+          bin=target/aarch64-unknown-linux-gnu/release/illuma
+          sum=$(sha256sum "$bin" | cut -d' ' -f1)
+          aws s3 cp "$bin" "s3://$bucket/$key" --only-show-errors --metadata "sha256=$sum,commit=$SHA"
+          {
+            echo "- commit \`$SHA\`"
+            echo "- object \`s3://<bucket>/$key\`"
+            echo "- sha256 \`$sum\`"
+          } >> "$GITHUB_STEP_SUMMARY"
